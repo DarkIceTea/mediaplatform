@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MediaPlatform.Api", "MediaPlatform.Api\MediaPlatform.Api.csproj", "{D9C704A3-2FFF-45E7-98AF-905546CC215E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MediaPlatform.Core", "MediaPlatform.Core\MediaPlatform.Core.csproj", "{9F91C84C-1F7A-4B39-8841-07B26FCCC3B8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MediaPlatform.Infrastructure", "MediaPlatform.Infrastructure\MediaPlatform.Infrastructure.csproj", "{F16763FF-9E65-4F2A-8428-0FAB9EA46AA1}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D9C704A3-2FFF-45E7-98AF-905546CC215E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D9C704A3-2FFF-45E7-98AF-905546CC215E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D9C704A3-2FFF-45E7-98AF-905546CC215E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D9C704A3-2FFF-45E7-98AF-905546CC215E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9F91C84C-1F7A-4B39-8841-07B26FCCC3B8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9F91C84C-1F7A-4B39-8841-07B26FCCC3B8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9F91C84C-1F7A-4B39-8841-07B26FCCC3B8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9F91C84C-1F7A-4B39-8841-07B26FCCC3B8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F16763FF-9E65-4F2A-8428-0FAB9EA46AA1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F16763FF-9E65-4F2A-8428-0FAB9EA46AA1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F16763FF-9E65-4F2A-8428-0FAB9EA46AA1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F16763FF-9E65-4F2A-8428-0FAB9EA46AA1}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

@@ -1,0 +1,27 @@
+# --- .NET & IDE ---
+[Bb]in/
+[Oo]bj/
+*.user
+*.suo
+.vs/
+.idea/
+*.DotSettings.user
+
+# --- Angular & Node ---
+node_modules/
+.angular/
+dist/
+.vscode/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# --- Docker & Local Data ---
+*.env
+.minio/
+pgdata/
+miniodata/
+
+# --- OS generated ---
+.DS_Store
+Thumbs.db
