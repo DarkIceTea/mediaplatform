@@ -16,27 +16,17 @@ export class AuthService {
   isAuthenticated = computed(() => !!this.currentUser());
 
   constructor() {
-    if (this.getToken()) {
-      this.loadCurrentUser().subscribe({
-        error: () => this.logout() 
-      });
-    }
+        this.loadCurrentUser();
   }
 
   login(credentials: LoginRequest) {
     return this.http.post<AuthResponse>(`${this.apiUrl}/login`, credentials).pipe(
-      tap(response => {
-        localStorage.setItem('token', response.token);
-        this.loadCurrentUser().subscribe();
-      })
+      tap(() => this.loadCurrentUser().subscribe())
     );
   }
 
   loadCurrentUser() {
-    const token = this.getToken();
-    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
-    
-    return this.http.get<User>(`${this.apiUrl}/me`, { headers }).pipe(
+    return this.http.get<User>(`${this.apiUrl}/me`).pipe(
       tap(user => this.currentUser.set(user))
     );
   }
@@ -44,9 +34,5 @@ export class AuthService {
   logout() {
     localStorage.removeItem('token');
     this.currentUser.set(null);
-  }
-
-  getToken(): string | null {
-    return localStorage.getItem('token');
   }
 }

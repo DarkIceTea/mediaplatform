@@ -39,7 +39,9 @@ public class AuthController : ControllerBase
             return BadRequest(result.Errors);
 
         var token = _jwtTokenService.GenerateToken(user);
-        return Ok(new AuthResponse(token, user.UserName, user.Email, user.DisplayName));
+        SetTokenCookie(token);
+        
+        return Ok(new AuthResponse( user.UserName, user.Email, user.DisplayName));
     }
 
     [HttpPost("login")]
@@ -50,7 +52,9 @@ public class AuthController : ControllerBase
             return Unauthorized("Wrong password or email");
 
         var token = _jwtTokenService.GenerateToken(user);
-        return Ok(new AuthResponse(token, user.UserName ?? "", user.Email ?? "", user.DisplayName));
+        SetTokenCookie(token);
+        
+        return Ok(new AuthResponse(user.UserName ?? "", user.Email ?? "", user.DisplayName));
     }
 
     [Authorize]
@@ -72,8 +76,28 @@ public class AuthController : ControllerBase
             user.CreatedAt
         });
     }
+    
+    [HttpPost("logout")]
+    public IActionResult Logout()
+    {
+        Response.Cookies.Delete("jwt");
+        return Ok();
+    }
+    
+    private void SetTokenCookie(string token)
+    {
+        var cookieOptions = new CookieOptions
+        {
+            HttpOnly = true,                  
+            Secure = false,                   
+            SameSite = SameSiteMode.Lax,      
+            Expires = DateTime.UtcNow.AddHours(2)
+        };
+
+        Response.Cookies.Append("jwt", token, cookieOptions);
+    }
 }
 
 public record RegisterRequest(string UserName, string Email, string DisplayName, string Password);
 public record LoginRequest(string Email, string Password);
-public record AuthResponse(string Token, string UserName, string Email, string DisplayName);
+public record AuthResponse(string UserName, string Email, string DisplayName);
