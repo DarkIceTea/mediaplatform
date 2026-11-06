@@ -25,3 +25,5 @@ miniodata/
 # --- OS generated ---
 .DS_Store
 Thumbs.db
+
+ai-dev-tasks/
