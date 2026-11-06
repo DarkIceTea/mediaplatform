@@ -1,0 +1,32 @@
+<div class="feed-header">
+  <h1>Лента публикаций</h1>
+</div>
+
+@if (isLoading()) {
+  <p class="status">Загрузка постов...</p>
+} @else if (posts().length === 0) {
+  <div class="empty">
+    <p>Пока нет ни одной публикации.</p>
+    <a routerLink="/posts/create" class="btn">Написать первую статью!</a>
+  </div>
+} @else {
+  <div class="posts-grid">
+    @for (post of posts(); track post.id) {
+      <article class="post-card" [routerLink]="['/posts', post.id]">
+        @if (post.coverImageUrl) {
+          <div class="cover-wrapper">
+            <img [src]="post.coverImageUrl" alt="{{ post.title }}" />
+          </div>
+        }
+        <div class="card-content">
+          <h2>{{ post.title }}</h2>
+          <p class="excerpt">{{ post.content | slice:0:120 }}...</p>
+          <div class="card-footer">
+            <span class="author">👤 {{ post.author.displayName }}</span>
+            <span class="date">{{ post.createdAt | date:'mediumDate' }}</span>
+          </div>
+        </div>
+      </article>
+    }
+  </div>
+}

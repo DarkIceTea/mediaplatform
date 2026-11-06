@@ -1,0 +1,27 @@
+@if (isLoading()) {
+  <p>Загрузка статьи...</p>
+} @else if (post()) {
+  <article class="post-detail">
+    <a routerLink="/posts" class="back-link">← Назад к ленте</a>
+
+    @if (post()?.coverImageUrl) {
+      <div class="cover">
+        <img [src]="post()?.coverImageUrl" alt="{{ post()?.title }}" />
+      </div>
+    }
+
+    <h1>{{ post()?.title }}</h1>
+
+    <div class="meta">
+      <span>Автор: <b>{{ post()?.author?.displayName }}</b></span>
+      <span>•</span>
+      <span>{{ post()?.createdAt | date:'longDate' }}</span>
+    </div>
+
+    <div class="content">
+      {{ post()?.content }}
+    </div>
+  </article>
+} @else {
+  <p>Статья не найдена.</p>
+}

@@ -1,0 +1,13 @@
+<nav class="navbar">
+  <div class="logo" routerLink="/posts">🎬 MediaPlatform</div>
+  <div class="links">
+    <a routerLink="/posts">Лента</a>
+    @if (authService.isAuthenticated()) {
+      <a routerLink="/posts/create" class="btn-create">+ Написать статью</a>
+      <span class="user-info">👤 {{ authService.currentUser()?.displayName }}</span>
+      <button (click)="onLogout()" class="btn-logout">Выйти</button>
+    } @else {
+      <a routerLink="/login" class="btn-login">Войти</a>
+    }
+  </div>
+</nav>

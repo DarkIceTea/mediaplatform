@@ -1,0 +1,22 @@
+<div class="auth-card">
+  <h2>{{ isRegister ? 'Регистрация' : 'Вход в аккаунт' }}</h2>
+
+  @if (errorMessage) {
+    <div class="error">{{ errorMessage }}</div>
+  }
+
+  <form (submit)="onSubmit()">
+    @if (isRegister) {
+      <input type="text" placeholder="Username" [(ngModel)]="userName" name="userName" required />
+      <input type="text" placeholder="Имя для отображения" [(ngModel)]="displayName" name="displayName" required />
+    }
+    <input type="email" placeholder="Email" [(ngModel)]="email" name="email" required />
+    <input type="password" placeholder="Пароль" [(ngModel)]="password" name="password" required />
+
+    <button type="submit">{{ isRegister ? 'Зарегистрироваться' : 'Войти' }}</button>
+  </form>
+
+  <p class="toggle-link" (click)="isRegister = !isRegister">
+    {{ isRegister ? 'Уже есть аккаунт? Войти' : 'Нет аккаунта? Зарегистрироваться' }}
+  </p>
+</div>
