@@ -1,5 +1,6 @@
 using System.Text;
 using MediaPlatform.Core.Entities;
+using MediaPlatform.Core.Interfaces;
 using MediaPlatform.Infrastructure.Data;
 using MediaPlatform.Infrastructure.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -74,6 +75,7 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddOpenApi();
+builder.Services.AddScoped<IFileStorageService, MinioStorageService>();
 
 var app = builder.Build();
 
