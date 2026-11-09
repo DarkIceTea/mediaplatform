@@ -21,6 +21,7 @@
     <div class="content">
       {{ post()?.content }}
     </div>
+    <app-comments [postId]="post()!.id" />
   </article>
 } @else {
   <p>Статья не найдена.</p>
