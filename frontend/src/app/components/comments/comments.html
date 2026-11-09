@@ -1,0 +1,61 @@
+<section class="comments-section">
+  <h3>Комментарии ({{ comments().length }})</h3>
+
+  @if (authService.isAuthenticated()) {
+    <form (submit)="onAddComment()" class="main-form">
+      <textarea 
+        [(ngModel)]="newCommentText" 
+        name="commentText" 
+        placeholder="Оставьте ваш комментарий..." 
+        rows="3" 
+        required
+      ></textarea>
+      <button type="submit">Отправить</button>
+    </form>
+  } @else {
+    <p class="login-prompt">
+      <a routerLink="/login">Войдите</a>, чтобы оставить комментарий.
+    </p>
+  }
+
+  <div class="comments-list">
+    @for (comment of comments(); track comment.id) {
+      <div class="comment-card">
+        <div class="header">
+          <span class="author">👤 {{ comment.author.displayName }}</span>
+          <span class="date">{{ comment.createdAt | date:'short' }}</span>
+        </div>
+        <p class="text">{{ comment.text }}</p>
+
+        @if (authService.isAuthenticated()) {
+          <button class="btn-reply" (click)="replyToCommentId.set(replyToCommentId() === comment.id ? null : comment.id)">
+            {{ replyToCommentId() === comment.id ? 'Отмена' : 'Ответить' }}
+          </button>
+        }
+
+        @if (replyToCommentId() === comment.id) {
+          <div class="reply-form">
+            <textarea [(ngModel)]="replyText" placeholder="Ваш ответ..." rows="2"></textarea>
+            <button (click)="onAddReply(comment)">Ответить</button>
+          </div>
+        }
+
+        @if (comment.replies.length > 0) {
+          <div class="replies-list">
+            @for (reply of comment.replies; track reply.id) {
+              <div class="reply-card">
+                <div class="header">
+                  <span class="author">👤 {{ reply.author.displayName }}</span>
+                  <span class="date">{{ reply.createdAt | date:'short' }}</span>
+                </div>
+                <p class="text">{{ reply.text }}</p>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    } @empty {
+      <p class="no-comments">Пока нет комментариев. Будьте первым!</p>
+    }
+  </div>
+</section>
