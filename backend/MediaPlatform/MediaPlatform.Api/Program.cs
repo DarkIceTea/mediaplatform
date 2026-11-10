@@ -76,6 +76,17 @@ builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddOpenApi();
 builder.Services.AddScoped<IFileStorageService, MinioStorageService>();
+builder.Services.AddSingleton<VideoProcessingQueue>();
+builder.Services.AddHostedService<VideoProcessingBackgroundService>();
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Limits.MaxRequestBodySize = 500 * 1024 * 1024; // 500 MB
+});
+
+builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(options =>
+{
+    options.MultipartBodyLengthLimit = 500 * 1024 * 1024; // 500 MB
+});
 
 var app = builder.Build();
 
