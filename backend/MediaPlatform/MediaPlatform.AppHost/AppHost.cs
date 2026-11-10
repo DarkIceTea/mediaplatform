@@ -15,4 +15,7 @@ var minio = builder.AddContainer("minio", "cgr.dev/chainguard/minio:latest")
     .WithArgs("server", "/data", "--console-address", ":9001")
     .WithVolume("miniodata", "/data");
 
+var identityApi = builder.AddProject<Projects.MediaPlatform_Identity_Api>("identity-api")
+    .WithReference(identityDb);
+
 builder.Build().Run();
