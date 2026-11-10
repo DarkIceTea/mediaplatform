@@ -8,7 +8,7 @@ import { CommentItem, CreateCommentRequest } from '../models/comment.models';
 })
 export class CommentService {
   private http = inject(HttpClient);
-  private apiUrl = 'http://localhost:5180/api/comments'; 
+  private apiUrl = 'http://localhost:5000/api/comments'; 
 
   getCommentsByPostId(postId: string) {
     return this.http.get<CommentItem[]>(`${this.apiUrl}?postId=${postId}`);

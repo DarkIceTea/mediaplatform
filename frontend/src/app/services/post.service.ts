@@ -8,7 +8,7 @@ import { CreatePostRequest, PagedResult, Post } from '../models/post.models';
 })
 export class PostService {
   private http = inject(HttpClient);
-  private apiUrl = 'http://localhost:5180/api';
+  private apiUrl = 'http://localhost:5000/api';
 
   getPosts(page: number = 1, pageSize: number = 10) {
     return this.http.get<PagedResult<Post>>(`${this.apiUrl}/posts?page=${page}&pageSize=${pageSize}`);

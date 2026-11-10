@@ -10,7 +10,7 @@ import { VideoItem } from '../models/video.models';
 })
 export class VideoService {
   private http = inject(HttpClient);
-  private apiUrl = 'http://localhost:5180/api/videos'; 
+  private apiUrl = 'http://localhost:5000/api/videos'; 
 
   getVideos(page: number = 1, pageSize: number = 12) {
     return this.http.get<PagedResult<VideoItem>>(`${this.apiUrl}?page=${page}&pageSize=${pageSize}`);

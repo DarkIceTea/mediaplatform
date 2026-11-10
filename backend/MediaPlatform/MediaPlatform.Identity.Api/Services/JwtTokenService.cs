@@ -25,7 +25,8 @@ public class JwtTokenService
         {
             new(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new(ClaimTypes.Name, user.UserName ?? string.Empty),
-            new(ClaimTypes.Email, user.Email ?? string.Empty)
+            new(ClaimTypes.Email, user.Email ?? string.Empty),
+            new("displayName", user.DisplayName ?? string.Empty)
         };
 
         var token = new JwtSecurityToken(
