@@ -13,8 +13,9 @@ import { CommentItem } from '../../models/comment.models';
   templateUrl: './comments.html',
   styleUrl: './comments.scss'
 })
-export class CommentsComponent implements OnInit {
-  postId = input.required<string>();
+export class Comments implements OnInit {
+  postId = input<string | undefined>();
+  videoId = input<string | undefined>();
 
   private commentService = inject(CommentService);
   authService = inject(AuthService);
@@ -29,11 +30,12 @@ export class CommentsComponent implements OnInit {
     this.loadComments();
   }
 
+  
   loadComments() {
-    this.commentService.getCommentsByPostId(this.postId()).subscribe({
-      next: (data) => this.comments.set(data),
-      error: (err) => console.error('Ошибка загрузки комментариев', err)
-    });
+  this.commentService.getComments({ postId: this.postId(), videoId: this.videoId() }).subscribe({
+    next: (data) => this.comments.set(data),
+    error: (err) => console.error(err)
+  });
   }
 
   onAddComment() {

@@ -5,11 +5,17 @@ import { PostCreate } from './components/post-create/post-create';
 import { PostDetail } from './components/post-detail/post-detail';
 import { Login } from './components/login/login';
 import { authGuard } from './guards/auth.guard';
+import { VideoList } from './components/video-list/video-list';
+import { VideoUpload } from './components/video-upload/video-upload';
+import { VideoWatch } from './components/video-watch/video-watch';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'posts', pathMatch: 'full' },
   { path: 'posts', component: PostList },
   { path: 'posts/create', component: PostCreate, canActivate: [authGuard] },
   { path: 'posts/:id', component: PostDetail },
-  { path: 'login', component: Login }
+  { path: 'login', component: Login },
+  { path: 'videos', component: VideoList },
+  { path: 'videos/upload', component: VideoUpload, canActivate: [authGuard] },
+  { path: 'videos/:id', component: VideoWatch },
 ];

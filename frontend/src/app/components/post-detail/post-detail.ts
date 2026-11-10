@@ -3,12 +3,12 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { DatePipe } from '@angular/common';
 import { PostService } from '../../services/post.service';
 import { Post } from '../../models/post.models';
-import { CommentsComponent } from '../comments/comments';
+import { Comments } from '../comments/comments';
 
 @Component({
   selector: 'app-post-detail',
   standalone: true,
-  imports: [DatePipe, RouterLink, CommentsComponent],
+  imports: [DatePipe, RouterLink, Comments],
   templateUrl: './post-detail.html',
   styleUrl: './post-detail.scss'
 })

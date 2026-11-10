@@ -1,0 +1,43 @@
+<div class="upload-container">
+  <h1>Загрузка видеоролика</h1>
+
+  @if (errorMessage) {
+    <div class="error">{{ errorMessage }}</div>
+  }
+
+  @if (isProcessing()) {
+    <div class="processing-card">
+      <h3>🎉 Видео успешно загружено!</h3>
+      <p>Фоновый сервис нарезает превью и обрабатывает ролик... Перенаправляем в ленту...</p>
+    </div>
+  } @else {
+    <form (submit)="onSubmit()">
+      <div class="form-group">
+        <label>Видеофайл (.mp4):</label>
+        <input type="file" (change)="onFileSelected($event)" accept="video/mp4,video/*" required />
+      </div>
+
+      <div class="form-group">
+        <label>Название видео:</label>
+        <input type="text" [(ngModel)]="title" name="title" placeholder="Введите название..." required />
+      </div>
+
+      <div class="form-group">
+        <label>Описание:</label>
+        <textarea [(ngModel)]="description" name="description" placeholder="О чем это видео?" rows="4"></textarea>
+      </div>
+
+      <!-- Полоса прогресса во время отправки -->
+      @if (isUploading()) {
+        <div class="progress-wrapper">
+          <div class="progress-bar" [style.width.%]="uploadProgress()"></div>
+          <span class="progress-text">Отправка на сервер: {{ uploadProgress() }}%</span>
+        </div>
+      }
+
+      <button type="submit" [disabled]="isUploading()">
+        {{ isUploading() ? 'Загрузка...' : 'Опубликовать видео' }}
+      </button>
+    </form>
+  }
+</div>

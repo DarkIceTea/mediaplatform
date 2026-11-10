@@ -1,0 +1,32 @@
+<div class="video-feed-header">
+  <h1>Видеоролики</h1>
+</div>
+
+@if (isLoading()) {
+  <p class="status">Загрузка видео...</p>
+} @else if (videos().length === 0) {
+  <div class="empty">
+    <p>Пока нет ни одного видео.</p>
+    <a routerLink="/videos/upload" class="btn">Загрузить первое видео!</a>
+  </div>
+} @else {
+  <div class="videos-grid">
+    @for (video of videos(); track video.id) {
+      <div class="video-card" [routerLink]="['/videos', video.id]">
+        <div class="thumbnail-wrapper">
+          <img [src]="video.thumbnailUrl || 'https://placehold.co/600x340?text=Обработка...'" alt="{{ video.title }}" />
+          <span class="duration-badge">{{ formatDuration(video.durationSeconds) }}</span>
+        </div>
+        <div class="video-info">
+          <h3 class="title">{{ video.title }}</h3>
+          <p class="author">👤 {{ video.author.displayName }}</p>
+          <div class="stats">
+            <span>{{ video.viewsCount }} просмотров</span>
+            <span>•</span>
+            <span>{{ video.createdAt | date:'shortDate' }}</span>
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+}

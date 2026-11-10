@@ -1,0 +1,43 @@
+@if (isLoading()) {
+  <p>Загрузка видеоплеера...</p>
+} @else if (video()) {
+  <div class="watch-layout">
+    <!-- Плеер со стримингом и постером-превью -->
+    <div class="player-container">
+      <video 
+        controls 
+        autoplay 
+        [poster]="video()?.thumbnailUrl"
+        class="video-player">
+        <source [src]="video()?.videoUrl" type="video/mp4" />
+        Ваш браузер не поддерживает встроенное воспроизведение видео.
+      </video>
+    </div>
+
+    <!-- Инфо о видео -->
+    <h1 class="video-title">{{ video()?.title }}</h1>
+
+    <div class="video-meta">
+      <div class="author-info">
+        <span class="avatar">👤</span>
+        <span class="name">{{ video()?.author?.displayName }}</span>
+      </div>
+      <div class="stats">
+        <span>{{ video()?.viewsCount }} просмотров</span>
+        <span>•</span>
+        <span>{{ video()?.createdAt | date:'longDate' }}</span>
+      </div>
+    </div>
+
+    @if (video()?.description) {
+      <div class="description-box">
+        {{ video()?.description }}
+      </div>
+    }
+
+    <!-- Наш компонент комментариев под видео! -->
+    <app-comments [videoId]="video()!.id" />
+  </div>
+} @else {
+  <p>Видео не найдено.</p>
+}

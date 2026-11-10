@@ -14,6 +14,11 @@ export class CommentService {
     return this.http.get<CommentItem[]>(`${this.apiUrl}?postId=${postId}`);
   }
 
+  getComments(target: { postId?: string; videoId?: string }) {
+    const param = target.postId ? `postId=${target.postId}` : `videoId=${target.videoId}`;
+    return this.http.get<CommentItem[]>(`${this.apiUrl}?${param}`);
+  }
+
   createComment(request: CreateCommentRequest) {
     return this.http.post<CommentItem>(this.apiUrl, request);
   }

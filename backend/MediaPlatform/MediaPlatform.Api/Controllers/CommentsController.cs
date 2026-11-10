@@ -19,11 +19,20 @@ public class CommentsController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetComments([FromQuery] Guid postId)
+    public async Task<IActionResult> GetComments([FromQuery] Guid? postId, [FromQuery] Guid? videoId)
     {
-        var comments = await _context.Comments
+        var query = _context.Comments
             .AsNoTracking()
-            .Where(c => c.PostId == postId && c.ParentCommentId == null) 
+            .Where(c => c.ParentCommentId == null);
+
+        if (postId.HasValue)
+            query = query.Where(c => c.PostId == postId.Value);
+        else if (videoId.HasValue)
+            query = query.Where(c => c.VideoId == videoId.Value);
+        else
+            return BadRequest("Do not specified PostId or VideoId");
+        
+        var comments = await query 
             .Include(c => c.Author)
             .Include(c => c.Replies)
                 .ThenInclude(r => r.Author)
@@ -88,5 +97,5 @@ public class CommentsController : ControllerBase
     }
 }
 
-public record CreateCommentRequest(string Text, Guid? PostId, Guid? ParentCommentId);
+public record CreateCommentRequest(string Text, Guid? PostId, Guid? VideoId, Guid? ParentCommentId);
 public record CommentDto(Guid Id, string Text, DateTime CreatedAt, AuthorDto Author, Guid? ParentCommentId, List<CommentDto> Replies);

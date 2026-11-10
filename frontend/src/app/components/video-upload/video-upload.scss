@@ -1,0 +1,73 @@
+.upload-container {
+  max-width: 600px;
+  margin: 0 auto;
+
+  h1 { margin-bottom: 24px; }
+  .error { color: #ef4444; margin-bottom: 16px; }
+
+  .processing-card {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    padding: 24px;
+    border-radius: 8px;
+    text-align: center;
+    h3 { color: #16a34a; margin-bottom: 8px; }
+  }
+
+  form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+
+      label { font-weight: 500; font-size: 14px; }
+      input[type="text"], textarea {
+        padding: 10px;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        font-family: inherit;
+      }
+    }
+
+    .progress-wrapper {
+      position: relative;
+      height: 24px;
+      background: #e2e8f0;
+      border-radius: 6px;
+      overflow: hidden;
+
+      .progress-bar {
+        height: 100%;
+        background: #8b5cf6;
+        transition: width 0.2s;
+      }
+
+      .progress-text {
+        position: absolute;
+        width: 100%;
+        top: 3px;
+        text-align: center;
+        font-size: 12px;
+        font-weight: 600;
+        color: #0f172a;
+      }
+    }
+
+    button {
+      padding: 12px;
+      background: #8b5cf6;
+      color: white;
+      font-size: 16px;
+      font-weight: bold;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      &:hover { background: #7c3aed; }
+      &:disabled { background: #94a3b8; cursor: not-allowed; }
+    }
+  }
+}

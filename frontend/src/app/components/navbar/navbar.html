@@ -1,9 +1,11 @@
 <nav class="navbar">
-  <div class="logo" routerLink="/posts">🎬 MediaPlatform</div>
+  <div class="logo" routerLink="/videos">🎬 MediaPlatform</div>
   <div class="links">
-    <a routerLink="/posts">Лента</a>
+    <a routerLink="/videos">Видео</a>
+    <a routerLink="/posts">Блог</a>
     @if (authService.isAuthenticated()) {
-      <a routerLink="/posts/create" class="btn-create">+ Написать статью</a>
+      <a routerLink="/videos/upload" class="btn-upload">⬆ Загрузить видео</a>
+      <a routerLink="/posts/create" class="btn-create">+ Статья</a>
       <span class="user-info">👤 {{ authService.currentUser()?.displayName }}</span>
       <button (click)="onLogout()" class="btn-logout">Выйти</button>
     } @else {

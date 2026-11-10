@@ -6,7 +6,7 @@
   background-color: #1e293b;
   color: white;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-
+  .btn-upload { background-color: #8b5cf6; padding: 6px 14px; border-radius: 6px; color: white; &:hover { background-color: #7c3aed; } }
   .logo {
     font-size: 20px;
     font-weight: bold;
