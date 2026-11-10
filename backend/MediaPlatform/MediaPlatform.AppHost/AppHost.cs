@@ -18,4 +18,8 @@ var minio = builder.AddContainer("minio", "cgr.dev/chainguard/minio:latest")
 var identityApi = builder.AddProject<Projects.MediaPlatform_Identity_Api>("identity-api")
     .WithReference(identityDb);
 
+var gateway = builder.AddProject<Projects.MediaPlatform_Gateway>("gateway")
+    .WithReference(identityApi)
+    .WithHttpEndpoint(port: 5000, name: "public");
+
 builder.Build().Run();

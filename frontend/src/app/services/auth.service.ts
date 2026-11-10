@@ -10,7 +10,7 @@ import { AuthResponse, LoginRequest, RegisterRequest, User } from '../models/aut
 export class AuthService {
   private http = inject(HttpClient);
   
-  private apiUrl = 'http://localhost:5180/api/auth'; 
+  private apiUrl = 'http://localhost:5000/api/auth'; 
 
   currentUser = signal<User | null>(null);
   isAuthenticated = computed(() => !!this.currentUser());
