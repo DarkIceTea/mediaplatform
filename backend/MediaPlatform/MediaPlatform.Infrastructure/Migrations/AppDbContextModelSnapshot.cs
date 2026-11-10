@@ -44,6 +44,9 @@ namespace MediaPlatform.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<Guid?>("VideoId")
+                        .HasColumnType("uuid");
+
                     b.HasKey("Id");
 
                     b.HasIndex("AuthorId");
@@ -51,6 +54,8 @@ namespace MediaPlatform.Infrastructure.Migrations
                     b.HasIndex("ParentCommentId");
 
                     b.HasIndex("PostId");
+
+                    b.HasIndex("VideoId");
 
                     b.ToTable("Comments");
                 });
@@ -166,6 +171,48 @@ namespace MediaPlatform.Infrastructure.Migrations
                         .HasDatabaseName("UserNameIndex");
 
                     b.ToTable("AspNetUsers", (string)null);
+                });
+
+            modelBuilder.Entity("MediaPlatform.Core.Entities.Video", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AuthorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
+
+                    b.Property<double>("DurationSeconds")
+                        .HasColumnType("double precision");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ThumbnailUrl")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("VideoUrl")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<long>("ViewsCount")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AuthorId");
+
+                    b.ToTable("Videos");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole<System.Guid>", b =>
@@ -316,17 +363,35 @@ namespace MediaPlatform.Infrastructure.Migrations
                         .HasForeignKey("PostId")
                         .OnDelete(DeleteBehavior.Cascade);
 
+                    b.HasOne("MediaPlatform.Core.Entities.Video", "Video")
+                        .WithMany("Comments")
+                        .HasForeignKey("VideoId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
                     b.Navigation("Author");
 
                     b.Navigation("ParentComment");
 
                     b.Navigation("Post");
+
+                    b.Navigation("Video");
                 });
 
             modelBuilder.Entity("MediaPlatform.Core.Entities.Post", b =>
                 {
                     b.HasOne("MediaPlatform.Core.Entities.User", "Author")
                         .WithMany("Posts")
+                        .HasForeignKey("AuthorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Author");
+                });
+
+            modelBuilder.Entity("MediaPlatform.Core.Entities.Video", b =>
+                {
+                    b.HasOne("MediaPlatform.Core.Entities.User", "Author")
+                        .WithMany()
                         .HasForeignKey("AuthorId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -393,6 +458,11 @@ namespace MediaPlatform.Infrastructure.Migrations
             modelBuilder.Entity("MediaPlatform.Core.Entities.User", b =>
                 {
                     b.Navigation("Posts");
+                });
+
+            modelBuilder.Entity("MediaPlatform.Core.Entities.Video", b =>
+                {
+                    b.Navigation("Comments");
                 });
 #pragma warning restore 612, 618
         }

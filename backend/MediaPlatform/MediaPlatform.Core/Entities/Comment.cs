@@ -11,6 +11,8 @@ public class Comment
 
     public Guid? PostId { get; set; }
     public Post? Post { get; set; }
+    public Guid? VideoId { get; set; }
+    public Video? Video { get; set; }
 
     public Guid? ParentCommentId { get; set; }
     public Comment? ParentComment { get; set; }

@@ -12,6 +12,7 @@ public class AppDbContext : IdentityDbContext<User, IdentityRole<Guid>, Guid>
     }
     public DbSet<Post> Posts => Set<Post>();
     public DbSet<Comment> Comments => Set<Comment>();
+    public DbSet<Video> Videos => Set<Video>();
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -31,6 +32,11 @@ public class AppDbContext : IdentityDbContext<User, IdentityRole<Guid>, Guid>
             entity.HasOne(c => c.Post)
                 .WithMany()
                 .HasForeignKey(c => c.PostId)
+                .OnDelete(DeleteBehavior.Cascade);
+            
+            entity.HasOne(c => c.Video)
+                .WithMany(v => v.Comments)
+                .HasForeignKey(c => c.VideoId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
     }
