@@ -37,7 +37,8 @@ var contentApi = builder.AddProject<Projects.MediaPlatform_Content_Api>("content
     .WithEnvironment("JwtSettings__Secret", jwtSecret)
     .WithEnvironment("JwtSettings__Issuer", jwtIssuer)
     .WithEnvironment("JwtSettings__Audience", jwtAudience)
-    .WithReference(blogDb); 
+    .WithReference(blogDb)
+    .WithReference(redis); 
 
 var gateway = builder.AddProject<Projects.MediaPlatform_Gateway>("gateway")
     .WithReference(identityApi)
