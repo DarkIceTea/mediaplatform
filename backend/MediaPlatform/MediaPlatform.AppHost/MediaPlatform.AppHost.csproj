@@ -18,6 +18,7 @@
     <ProjectReference Include="..\MediaPlatform.Identity.Api\MediaPlatform.Identity.Api.csproj" />
     <ProjectReference Include="..\MediaPlatform.Gateway\MediaPlatform.Gateway.csproj" />
     <ProjectReference Include="..\MediaPlatform.Media.Api\MediaPlatform.Media.Api.csproj" />
+    <ProjectReference Include="..\MediaPlatform.Content.Api\MediaPlatform.Content.Api.csproj" />
   </ItemGroup>
 
 </Project>
