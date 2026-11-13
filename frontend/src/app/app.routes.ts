@@ -8,6 +8,7 @@ import { authGuard } from './guards/auth.guard';
 import { VideoList } from './components/video-list/video-list';
 import { VideoUpload } from './components/video-upload/video-upload';
 import { VideoWatch } from './components/video-watch/video-watch';
+import { Chat } from './components/chat/chat';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'posts', pathMatch: 'full' },
@@ -18,4 +19,5 @@ export const routes: Routes = [
   { path: 'videos', component: VideoList },
   { path: 'videos/upload', component: VideoUpload, canActivate: [authGuard] },
   { path: 'videos/:id', component: VideoWatch },
+  { path: 'chat', component: Chat, canActivate: [authGuard] },
 ];

@@ -10,6 +10,7 @@ var postgres = builder.AddPostgres("postgres")
 var identityDb = postgres.AddDatabase("identitydb");
 var mediaDb = postgres.AddDatabase("mediadb");
 var blogDb = postgres.AddDatabase("blogdb"); 
+var chatDb = postgres.AddDatabase("chatdb");
 
 var redis = builder.AddRedis("redis");
 
@@ -40,10 +41,19 @@ var contentApi = builder.AddProject<Projects.MediaPlatform_Content_Api>("content
     .WithReference(blogDb)
     .WithReference(redis); 
 
+var chatApi = builder.AddProject<Projects.MediaPlatform_Chat_Api>("chat-api")
+    .WithEnvironment("JwtSettings__Secret", jwtSecret)
+    .WithEnvironment("JwtSettings__Issuer", jwtIssuer)
+    .WithEnvironment("JwtSettings__Audience", jwtAudience)
+    .WithReference(chatDb)
+    .WithReference(identityApi)
+    .WithReference(redis);
+
 var gateway = builder.AddProject<Projects.MediaPlatform_Gateway>("gateway")
     .WithReference(identityApi)
     .WithReference(mediaApi)
     .WithReference(contentApi)
+    .WithReference(chatApi)
     .WithHttpEndpoint(port: 5000, name: "public");
 
 

@@ -1,0 +1,57 @@
+<div class="chat-container">
+  <aside class="sidebar">
+    <h3>Контакты</h3>
+    <div class="users-list">
+      @for (user of users(); track user.id) {
+        <div 
+          class="user-item" 
+          [class.active]="chatService.activeUser()?.id === user.id"
+          (click)="selectUser(user)">
+          <div class="avatar">👤</div>
+          <div class="user-details">
+            <span class="name">{{ user.displayName }}</span>
+            <span class="username">&#64;{{ user.userName }}</span>
+          </div>
+        </div>
+      } @empty {
+        <p class="empty-users">Других пользователей пока нет</p>
+      }
+    </div>
+  </aside>
+
+  <section class="dialog-area">
+    @if (chatService.activeUser(); as active) {
+      <div class="dialog-header">
+        <span>Диалог с: <b>{{ active.displayName }}</b></span>
+      </div>
+
+      <div class="messages-container" #messagesContainer>
+        @for (msg of chatService.messages(); track msg.id) {
+          <div class="message-bubble" [class.my-message]="msg.senderId === authService.currentUser()?.id">
+            <span class="sender">{{ msg.senderName }}</span>
+            <p class="text">{{ msg.content }}</p>
+            <span class="time">{{ msg.sentAt | date:'shortTime' }}</span>
+          </div>
+        } @empty {
+          <p class="no-messages">Здесь пока нет сообщений. Напишите первым!</p>
+        }
+      </div>
+
+      <form class="input-form" (submit)="onSend()">
+        <input 
+          type="text" 
+          [(ngModel)]="messageText" 
+          name="messageText" 
+          placeholder="Напишите сообщение..." 
+          autocomplete="off"
+          required 
+        />
+        <button type="submit">Отправить</button>
+      </form>
+    } @else {
+      <div class="select-prompt">
+        <p>👈 Выберите собеседника слева, чтобы начать диалог</p>
+      </div>
+    }
+  </section>
+</div>

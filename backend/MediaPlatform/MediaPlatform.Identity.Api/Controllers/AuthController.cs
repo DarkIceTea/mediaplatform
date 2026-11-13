@@ -4,6 +4,7 @@ using MediaPlatform.Identity.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace MediaPlatform.Identity.Api.Controllers;
 
@@ -95,6 +96,15 @@ public class AuthController : ControllerBase
         };
 
         Response.Cookies.Append("jwt", token, cookieOptions);
+    }
+    [HttpGet("users")]
+    public async Task<IActionResult> GetAllUsers()
+    {
+        var users = await _userManager.Users
+            .Select(u => new { u.Id, u.UserName, u.DisplayName })
+            .ToListAsync();
+
+        return Ok(users);
     }
 }
 

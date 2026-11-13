@@ -4,6 +4,7 @@
     <a routerLink="/videos">Видео</a>
     <a routerLink="/posts">Блог</a>
     @if (authService.isAuthenticated()) {
+      <a routerLink="/chat">💬 Сообщения</a>
       <a routerLink="/videos/upload" class="btn-upload">⬆ Загрузить видео</a>
       <a routerLink="/posts/create" class="btn-create">+ Статья</a>
       <span class="user-info">👤 {{ authService.currentUser()?.displayName }}</span>
