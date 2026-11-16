@@ -27,3 +27,8 @@ miniodata/
 Thumbs.db
 
 ai-dev-tasks/
+
+# --- Aspirate local secrets & temp manifests ---
+aspirate-state.json
+*secret*.yaml
+aspire-manifest.json

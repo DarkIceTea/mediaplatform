@@ -1,0 +1,31 @@
+resources:
+- deployment.yaml
+- service.yaml
+
+generatorOptions:
+  disableNameSuffixHash: true
+
+configMapGenerator:
+- name: media-api-env
+  literals:
+    - OTEL_DOTNET_EXPERIMENTAL_OTLP_RETRY=in_memory
+    - ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
+    - HTTP_PORTS=8080
+    - JwtSettings__Secret=super_secret_key_which_must_be_very_long_and_secure_12345!
+    - JwtSettings__Issuer=MediaPlatformApi
+    - JwtSettings__Audience=MediaPlatformClient
+    - MEDIADB_HOST=postgres
+    - MEDIADB_PORT=5432
+    - MEDIADB_USERNAME=postgres
+    - MEDIADB_PASSWORD=V3fnIU5UJ5SHpMVY8EKxLU
+    - MEDIADB_URI=postgresql://postgres:{postgres-password-uri-encoded.value}@postgres:5432/mediadb
+    - MEDIADB_JDBCCONNECTIONSTRING=jdbc:postgresql://postgres:5432/mediadb
+    - MEDIADB_DATABASENAME=mediadb
+    - OTEL_EXPORTER_OTLP_ENDPOINT=http://aspire-dashboard:18889
+    - OTEL_SERVICE_NAME=media-api
+    - ASPNETCORE_URLS=http://+:8080;
+
+secretGenerator:
+- name: media-api-secrets
+  envs:
+  - .media-api.secrets

@@ -1,0 +1,35 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chat-api
+  labels:
+    app: chat-api
+spec:
+  minReadySeconds: 60
+  replicas: 1
+  selector:
+    matchLabels:
+      app: chat-api
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: chat-api
+    spec:
+      containers:
+      - name: chat-api
+        image: chat-api:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: http
+          containerPort: 8080
+        - name: https
+          containerPort: 8443
+        envFrom:
+        - configMapRef:
+            name: chat-api-env
+        - secretRef:
+            name: chat-api-secrets
+      terminationGracePeriodSeconds: 180

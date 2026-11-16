@@ -1,0 +1,25 @@
+resources:
+- deployment.yaml
+- service.yaml
+
+generatorOptions:
+  disableNameSuffixHash: true
+
+configMapGenerator:
+- name: gateway-env
+  literals:
+    - OTEL_DOTNET_EXPERIMENTAL_OTLP_RETRY=in_memory
+    - ASPNETCORE_FORWARDEDHEADERS_ENABLED=true
+    - HTTP_PORTS=8080;8000
+    - IDENTITY_API_HTTP=http://identity-api:8080
+    - services__identity-api__http__0=http://identity-api:8080
+    - MEDIA_API_HTTP=http://media-api:8080
+    - services__media-api__http__0=http://media-api:8080
+    - CONTENT_API_HTTP=http://content-api:8080
+    - services__content-api__http__0=http://content-api:8080
+    - CHAT_API_HTTP=http://chat-api:8080
+    - services__chat-api__http__0=http://chat-api:8080
+    - OTEL_EXPORTER_OTLP_ENDPOINT=http://aspire-dashboard:18889
+    - OTEL_SERVICE_NAME=gateway
+    - ASPNETCORE_URLS=http://+:8080;
+

@@ -1,0 +1,35 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: media-api
+  labels:
+    app: media-api
+spec:
+  minReadySeconds: 60
+  replicas: 1
+  selector:
+    matchLabels:
+      app: media-api
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: media-api
+    spec:
+      containers:
+      - name: media-api
+        image: media-api:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: http
+          containerPort: 8080
+        - name: https
+          containerPort: 8443
+        envFrom:
+        - configMapRef:
+            name: media-api-env
+        - secretRef:
+            name: media-api-secrets
+      terminationGracePeriodSeconds: 180

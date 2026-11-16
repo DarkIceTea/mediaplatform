@@ -1,0 +1,15 @@
+resources:
+- statefulset.yaml
+- service.yaml
+
+generatorOptions:
+  disableNameSuffixHash: true
+
+configMapGenerator:
+- name: minio-env
+  literals:
+    - MINIO_ROOT_USER=miniouser
+    - MINIO_ROOT_PASSWORD=miniopassword
+    - OTEL_EXPORTER_OTLP_ENDPOINT=http://aspire-dashboard:18889
+    - OTEL_SERVICE_NAME=minio
+

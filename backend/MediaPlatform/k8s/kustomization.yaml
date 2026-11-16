@@ -1,0 +1,20 @@
+namespace: mediaplatform
+
+resources:
+- postgres
+- redis
+- minio
+- identity-api
+- media-api
+- content-api
+- chat-api
+- gateway
+- namespace.yaml
+- dashboard.yaml
+- frontend.yaml
+- ingress.yaml
+
+generatorOptions:
+  disableNameSuffixHash: true
+
+
