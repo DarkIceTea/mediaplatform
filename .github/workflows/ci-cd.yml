@@ -127,5 +127,5 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           tags: |
-            ghcr.io/${{ github.repository_owner }}/mediaplatform-${{ matrix.name }}:latest
-            ghcr.io/${{ github.repository_owner }}/mediaplatform-${{ matrix.name }}:${{ github.sha }}
+            ghcr.io/${{ env.REPO_OWNER }}/mediaplatform-${{ matrix.name }}:latest
+            ghcr.io/${{ env.REPO_OWNER }}/mediaplatform-${{ matrix.name }}:${{ github.sha }}
