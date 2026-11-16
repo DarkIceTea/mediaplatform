@@ -55,11 +55,22 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        
+      - name: Create mock secrets for Kustomize validation
+        run: |
+          find backend/MediaPlatform/k8s -name "kustomization.yaml" | while read -r file; do
+            dir=$(dirname "$file")
+            (grep -oE '[^[:space:]]+\.secrets' "$file" || true) | while read -r secret; do
+              echo "Creating mock secret: $dir/$secret"
+              echo "MOCK_KEY=mock_value" > "$dir/$secret"
+            done
+          done
 
       - name: Validate Kustomize build
         run: |
           kubectl kustomize backend/MediaPlatform/k8s > /dev/null
           echo "Kubernetes манифесты валидны!"
+          
 
 
   publish-docker:
