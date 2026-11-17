@@ -55,11 +55,10 @@ var app = builder.Build();
 
 app.MapDefaultEndpoints();
 
-if (app.Environment.IsDevelopment())
-{
-    using var scope = app.Services.CreateScope();
-    scope.ServiceProvider.GetRequiredService<ChatDbContext>().Database.Migrate();
-}
+
+using var scope = app.Services.CreateScope();
+scope.ServiceProvider.GetRequiredService<ChatDbContext>().Database.Migrate();
+
 
 app.UseAuthentication();
 app.UseAuthorization();

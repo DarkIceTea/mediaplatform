@@ -13,10 +13,13 @@ public class MinioStorageService : IFileStorageService
 {
     private readonly IAmazonS3 _s3Client;
     private readonly string _bucketName = "media-platform";
-    private readonly string _endpoint = "http://localhost:9000";
+    private readonly string _endpoint;
+    private readonly string _publicEndpoint;
 
     public MinioStorageService(IConfiguration configuration)
     {
+        _endpoint = configuration["Minio:Endpoint"] ?? "http://localhost:9000";
+        _publicEndpoint = configuration["Minio:PublicEndpoint"] ?? _endpoint;
         var config = new AmazonS3Config
         {
             ServiceURL = _endpoint,
@@ -64,6 +67,6 @@ public class MinioStorageService : IFileStorageService
             ContentType = contentType
         });
 
-        return $"{_endpoint}/{_bucketName}/{uniqueFileName}";
+        return $"{_publicEndpoint}/{_bucketName}/{uniqueFileName}";
     }
 }

@@ -24,6 +24,8 @@ configMapGenerator:
     - OTEL_EXPORTER_OTLP_ENDPOINT=http://aspire-dashboard:18889
     - OTEL_SERVICE_NAME=media-api
     - ASPNETCORE_URLS=http://+:8080;
+    - Minio__Endpoint=http://minio:9000
+    - Minio__PublicEndpoint=http://localhost:9000
 
 secretGenerator:
 - name: media-api-secrets
