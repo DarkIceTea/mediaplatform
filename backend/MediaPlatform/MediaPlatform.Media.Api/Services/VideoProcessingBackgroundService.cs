@@ -23,13 +23,21 @@ public class VideoProcessingBackgroundService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        var ffmpegPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ffmpeg");
-        if (!Directory.Exists(ffmpegPath) || !File.Exists(Path.Combine(ffmpegPath, "ffmpeg.exe")))
+        if (OperatingSystem.IsWindows())
         {
-            _logger.LogInformation("Loading FFmpeg ...");
-            await FFmpegDownloader.GetLatestVersion(FFmpegVersion.Official, ffmpegPath);
+            var ffmpegPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ffmpeg");
+            if (!Directory.Exists(ffmpegPath) || !File.Exists(Path.Combine(ffmpegPath, "ffmpeg.exe")))
+            {
+                _logger.LogInformation("Download FFmpeg for Windows...");
+                await FFmpegDownloader.GetLatestVersion(FFmpegVersion.Official, ffmpegPath);
+            }
+            FFmpeg.SetExecutablesPath(ffmpegPath);
         }
-        FFmpeg.SetExecutablesPath(ffmpegPath);
+        else
+        {
+            FFmpeg.SetExecutablesPath("/usr/bin");
+            _logger.LogInformation("Use FFmpeg from /usr/bin");
+        }
 
         while (!stoppingToken.IsCancellationRequested)
         {
