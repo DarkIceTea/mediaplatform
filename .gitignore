@@ -32,3 +32,5 @@ ai-dev-tasks/
 aspirate-state.json
 *secret*.yaml
 aspire-manifest.json
+
+*.secrets

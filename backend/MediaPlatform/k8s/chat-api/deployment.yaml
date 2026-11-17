@@ -21,7 +21,7 @@ spec:
       containers:
       - name: chat-api
         image: ghcr.io/darkicetea/mediaplatform-chat-api:latest
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
         ports:
         - name: http
           containerPort: 8080

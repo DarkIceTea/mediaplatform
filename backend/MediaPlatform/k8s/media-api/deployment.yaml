@@ -21,7 +21,7 @@ spec:
       containers:
       - name: media-api
         image: ghcr.io/darkicetea/mediaplatform-media-api:latest
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
         ports:
         - name: http
           containerPort: 8080
