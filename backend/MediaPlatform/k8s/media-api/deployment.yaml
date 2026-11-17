@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
       - name: media-api
-        image: media-api:latest
+        image: ghcr.io/darkicetea/mediaplatform-media-api:latest
         imagePullPolicy: IfNotPresent
         ports:
         - name: http

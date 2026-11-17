@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
       - name: chat-api
-        image: chat-api:latest
+        image: ghcr.io/darkicetea/mediaplatform-chat-api:latest
         imagePullPolicy: IfNotPresent
         ports:
         - name: http
