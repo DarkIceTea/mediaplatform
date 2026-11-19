@@ -100,6 +100,22 @@ namespace MediaPlatform.Content.Api.Migrations
                     b.ToTable("Posts");
                 });
 
+            modelBuilder.Entity("MediaPlatform.Content.Api.Entities.PostLike", b =>
+                {
+                    b.Property<Guid>("PostId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("PostId", "UserId");
+
+                    b.ToTable("PostLikes");
+                });
+
             modelBuilder.Entity("MediaPlatform.Content.Api.Entities.Comment", b =>
                 {
                     b.HasOne("MediaPlatform.Content.Api.Entities.Comment", "ParentComment")
@@ -117,6 +133,17 @@ namespace MediaPlatform.Content.Api.Migrations
                     b.Navigation("Post");
                 });
 
+            modelBuilder.Entity("MediaPlatform.Content.Api.Entities.PostLike", b =>
+                {
+                    b.HasOne("MediaPlatform.Content.Api.Entities.Post", "Post")
+                        .WithMany("Likes")
+                        .HasForeignKey("PostId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Post");
+                });
+
             modelBuilder.Entity("MediaPlatform.Content.Api.Entities.Comment", b =>
                 {
                     b.Navigation("Replies");
@@ -125,6 +152,8 @@ namespace MediaPlatform.Content.Api.Migrations
             modelBuilder.Entity("MediaPlatform.Content.Api.Entities.Post", b =>
                 {
                     b.Navigation("Comments");
+
+                    b.Navigation("Likes");
                 });
 #pragma warning restore 612, 618
         }
