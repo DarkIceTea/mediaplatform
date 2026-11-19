@@ -1,0 +1,2143 @@
+{
+  "info": {
+    "name": "MediaPlatform API",
+    "description": "End-to-end tests for my-media-platform through the YARP gateway.\n\nRun the whole collection in order (Collection Runner or `newman run`). Each run registers two fresh users and creates a post, comments, an image and a dummy video.\n\nAuth: the API reads the JWT from the `jwt` cookie only. Postman's cookie jar is disabled per request; the token is captured from Set-Cookie into the `jwt` collection variable and sent explicitly as `Cookie: jwt={{jwt}}`.\n\nRate limits: a collection pre-request script waits before /api/auth (5/min) and /api/media + /api/videos (3/min) calls so the run never trips a 429. A full run takes ~4-5 minutes. Set `respectRateLimits` to `false` to disable.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Client-side throttle that mirrors the gateway rate limiter policies",
+          "// (MediaPlatform.Gateway/Program.cs) so a full run never trips a 429.",
+          "// Disable with respectRateLimits=false (e.g. after raising limits locally).",
+          "// Requests whose name starts with \"RL \" deliberately bypass it.",
+          "const policies = [",
+          "  { key: 'rl_auth', prefixes: ['/api/auth'], limit: 5, windowMs: 62000 },",
+          "  { key: 'rl_upload', prefixes: ['/api/media', '/api/videos'], limit: 3, windowMs: 62000 },",
+          "];",
+          "const reqPath = pm.request.url.getPath();",
+          "const policy = policies.find(p => p.prefixes.some(pre => reqPath.startsWith(pre)));",
+          "if (policy) {",
+          "  const now = Date.now();",
+          "  let stamps = [];",
+          "  try { stamps = JSON.parse(pm.collectionVariables.get(policy.key) || '[]'); } catch (e) {}",
+          "  stamps = stamps.filter(t => now - t < policy.windowMs);",
+          "  const bypass = String(pm.variables.get('respectRateLimits')) === 'false' || pm.info.requestName.startsWith('RL ');",
+          "  let wait = 0;",
+          "  if (!bypass && stamps.length >= policy.limit) {",
+          "    wait = stamps[stamps.length - policy.limit] + policy.windowMs - now;",
+          "  }",
+          "  if (wait > 0) console.log('[throttle] ' + reqPath + ' waits ' + Math.ceil(wait / 1000) + 's for gateway rate limit');",
+          "  setTimeout(() => {",
+          "    stamps.push(Date.now());",
+          "    pm.collectionVariables.set(policy.key, JSON.stringify(stamps));",
+          "  }, Math.max(wait, 0));",
+          "}"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (!pm.info.requestName.startsWith('RL ')) {",
+          "  pm.test('not rate limited by gateway (429)', () => pm.expect(pm.response.code, 'hit gateway rate limit - wait a minute and rerun').to.not.eql(429));",
+          "}",
+          "pm.test('no server error (5xx)', () => pm.expect(pm.response.code).to.be.below(500));"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000"
+    },
+    {
+      "key": "respectRateLimits",
+      "value": "true"
+    }
+  ],
+  "item": [
+    {
+      "name": "00 Health",
+      "description": "Gateway liveness/health (mapped only in Development).",
+      "item": [
+        {
+          "name": "Gateway health",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('reports Healthy', () => pm.expect(pm.response.text()).to.eql('Healthy'));"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Gateway alive",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/alive",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "alive"
+              ]
+            },
+            "description": ""
+          }
+        }
+      ]
+    },
+    {
+      "name": "01 Identity",
+      "description": "Identity.Api via /api/auth/*. Gateway policy auth-policy: 5 req/min per IP (sliding).",
+      "item": [
+        {
+          "name": "Me - unauthenticated",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Register user A",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Fresh, unique users for every run",
+                  "const runId = Date.now().toString(36) + Math.floor(Math.random() * 1e4);",
+                  "pm.collectionVariables.set('runId', runId);",
+                  "pm.collectionVariables.set('userNameA', 'pm_a_' + runId);",
+                  "pm.collectionVariables.set('emailA', 'pm_a_' + runId + '@test.local');",
+                  "pm.collectionVariables.set('displayNameA', 'Postman A ' + runId);",
+                  "pm.collectionVariables.set('userNameB', 'pm_b_' + runId);",
+                  "pm.collectionVariables.set('emailB', 'pm_b_' + runId + '@test.local');",
+                  "pm.collectionVariables.set('displayNameB', 'Postman B ' + runId);",
+                  "pm.collectionVariables.set('password', 'Passw0rd!' + runId);",
+                  "pm.collectionVariables.unset('jwt');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('returns the created user', () => {",
+                  "  pm.expect(body.userName).to.eql(pm.collectionVariables.get('userNameA'));",
+                  "  pm.expect(body.email).to.eql(pm.collectionVariables.get('emailA'));",
+                  "  pm.expect(body.displayName).to.eql(pm.collectionVariables.get('displayNameA'));",
+                  "});",
+                  "pm.test('does not leak password', () => pm.expect(JSON.stringify(body)).to.not.include(pm.collectionVariables.get('password')));",
+                  "",
+                  "const setCookie = pm.response.headers.all()",
+                  "  .filter(h => h.key.toLowerCase() === 'set-cookie')",
+                  "  .map(h => h.value)",
+                  "  .find(v => v.startsWith('jwt='));",
+                  "pm.test('sets HttpOnly jwt cookie', () => {",
+                  "  pm.expect(setCookie, 'Set-Cookie: jwt=...').to.be.a('string');",
+                  "  pm.expect(setCookie.toLowerCase()).to.include('httponly');",
+                  "  pm.expect(setCookie.toLowerCase()).to.include('samesite=lax');",
+                  "});",
+                  "if (setCookie) pm.collectionVariables.set('jwt', setCookie.split(';')[0].substring(4));"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userName\": \"{{userNameA}}\",\n  \"email\": \"{{emailA}}\",\n  \"displayName\": \"{{displayNameA}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Register user B",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('returns user B', () => pm.expect(pm.response.json().userName).to.eql(pm.collectionVariables.get('userNameB')));"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userName\": \"{{userNameB}}\",\n  \"email\": \"{{emailB}}\",\n  \"displayName\": \"{{displayNameB}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Register - duplicate email",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));",
+                  "pm.test('explains duplicate email', () => pm.expect(pm.response.text()).to.include('already exists'));"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userName\": \"{{userNameA}}_dup\",\n  \"email\": \"{{emailA}}\",\n  \"displayName\": \"Dup\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Register - weak password",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));",
+                  "pm.test('returns Identity errors', () => {",
+                  "  const errors = pm.response.json();",
+                  "  pm.expect(errors).to.be.an('array').that.is.not.empty;",
+                  "  errors.forEach(e => pm.expect(e).to.have.property('code'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userName\": \"pm_weak_{{runId}}\",\n  \"email\": \"pm_weak_{{runId}}@test.local\",\n  \"displayName\": \"Weak\",\n  \"password\": \"123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Login - wrong password",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 401', () => pm.response.to.have.status(401));",
+                  "pm.test('no jwt cookie issued', () => {",
+                  "  const hasJwt = pm.response.headers.all().some(h => h.key.toLowerCase() === 'set-cookie' && h.value.startsWith('jwt='));",
+                  "  pm.expect(hasJwt).to.be.false;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{emailA}}\",\n  \"password\": \"wrong-password\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Login user A",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('returns user A', () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.userName).to.eql(pm.collectionVariables.get('userNameA'));",
+                  "  pm.expect(body.email).to.eql(pm.collectionVariables.get('emailA'));",
+                  "});",
+                  "",
+                  "const setCookie = pm.response.headers.all()",
+                  "  .filter(h => h.key.toLowerCase() === 'set-cookie')",
+                  "  .map(h => h.value)",
+                  "  .find(v => v.startsWith('jwt='));",
+                  "pm.test('sets HttpOnly jwt cookie', () => {",
+                  "  pm.expect(setCookie, 'Set-Cookie: jwt=...').to.be.a('string');",
+                  "  pm.expect(setCookie.toLowerCase()).to.include('httponly');",
+                  "  pm.expect(setCookie.toLowerCase()).to.include('samesite=lax');",
+                  "});",
+                  "if (setCookie) pm.collectionVariables.set('jwt', setCookie.split(';')[0].substring(4));"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{emailA}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Me",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const me = pm.response.json();",
+                  "pm.test('returns current user', () => {",
+                  "  pm.expect(me.id).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);",
+                  "  pm.expect(me.userName).to.eql(pm.collectionVariables.get('userNameA'));",
+                  "  pm.expect(me.email).to.eql(pm.collectionVariables.get('emailA'));",
+                  "  pm.expect(me.displayName).to.eql(pm.collectionVariables.get('displayNameA'));",
+                  "  pm.expect(me).to.have.property('createdAt');",
+                  "});",
+                  "pm.collectionVariables.set('userIdA', me.id);"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "jwt={{jwt}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Users",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const users = pm.response.json();",
+                  "const a = users.find(u => u.userName === pm.collectionVariables.get('userNameA'));",
+                  "const b = users.find(u => u.userName === pm.collectionVariables.get('userNameB'));",
+                  "pm.test('contains both test users', () => {",
+                  "  pm.expect(a, 'user A').to.exist;",
+                  "  pm.expect(b, 'user B').to.exist;",
+                  "  pm.expect(a.id).to.eql(pm.collectionVariables.get('userIdA'));",
+                  "});",
+                  "pm.test('exposes only id, userName, displayName', () => {",
+                  "  users.forEach(u => pm.expect(Object.keys(u)).to.have.members(['id', 'userName', 'displayName']));",
+                  "});",
+                  "if (b) pm.collectionVariables.set('userIdB', b.id);"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "users"
+              ]
+            },
+            "description": ""
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 Posts",
+      "description": "Content.Api /api/posts (Redis cached). Gateway policy general-policy.",
+      "item": [
+        {
+          "name": "List posts",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('paged response shape', () => {",
+                  "  pm.expect(body.items).to.be.an('array');",
+                  "  pm.expect(body.items.length).to.be.at.most(10);",
+                  "  pm.expect(body.totalCount).to.be.a('number');",
+                  "  pm.expect(body.page).to.eql(1);",
+                  "  pm.expect(body.pageSize).to.eql(10);",
+                  "});",
+                  "pm.test('sorted newest first', () => {",
+                  "  const dates = body.items.map(p => Date.parse(p.createdAt));",
+                  "  pm.expect(dates).to.eql([...dates].sort((x, y) => y - x));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/posts?page=1&pageSize=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "posts"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "List posts - page size 1",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('respects pageSize', () => {",
+                  "  pm.expect(body.pageSize).to.eql(1);",
+                  "  pm.expect(body.items.length).to.be.at.most(1);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/posts?page=1&pageSize=1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "posts"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Create post - unauthenticated",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/posts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "posts"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Should fail\",\n  \"content\": \"No auth\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Create post - missing fields",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));",
+                  "pm.test('validation problem details', () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.errors).to.have.any.keys('Title', 'Content');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "jwt={{jwt}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/posts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "posts"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Create post",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test('returns new id', () => pm.expect(body.id).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i));",
+                  "pm.test('Location header points to the post', () => {",
+                  "  pm.expect(pm.response.headers.get('Location')).to.include('/api/posts/' + body.id);",
+                  "});",
+                  "pm.collectionVariables.set('postId', body.id);"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "jwt={{jwt}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/posts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "posts"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Postman post {{runId}}\",\n  \"content\": \"Created by the Postman test suite.\",\n  \"coverImageUrl\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Get post by id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const post = pm.response.json();",
+                  "pm.test('returns the created post', () => {",
+                  "  pm.expect(post.id).to.eql(pm.collectionVariables.get('postId'));",
+                  "  pm.expect(post.title).to.eql('Postman post ' + pm.collectionVariables.get('runId'));",
+                  "  pm.expect(post.content).to.eql('Created by the Postman test suite.');",
+                  "  pm.expect(post.coverImageUrl).to.be.null;",
+                  "});",
+                  "pm.test('author is taken from the JWT', () => {",
+                  "  pm.expect(post.author.id).to.eql(pm.collectionVariables.get('userIdA'));",
+                  "  pm.expect(post.author.userName).to.eql(pm.collectionVariables.get('userNameA'));",
+                  "  pm.expect(post.author.displayName).to.eql(pm.collectionVariables.get('displayNameA'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/posts/{{postId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "posts",
+                "{{postId}}"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Get post - not found",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/posts/00000000-0000-0000-0000-000000000001",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "posts",
+                "00000000-0000-0000-0000-000000000001"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Get post - invalid id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 404 (route constraint)', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/posts/not-a-guid",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "posts",
+                "not-a-guid"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "List posts - contains new post",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('new post is first on page 1 (cache invalidated)', () => {",
+                  "  const ids = pm.response.json().items.map(p => p.id);",
+                  "  pm.expect(ids).to.include(pm.collectionVariables.get('postId'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/posts?page=1&pageSize=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "posts"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Verifies the first-page cache is invalidated after CreatePost."
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 Comments",
+      "description": "Content.Api /api/comments. Requires 02 Posts (postId).",
+      "item": [
+        {
+          "name": "Get comments - no target",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 400 without postId/videoId', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/comments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "comments"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Create comment - unauthenticated",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/comments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "comments"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"Should fail\",\n  \"postId\": \"{{postId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Create comment - empty text",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "jwt={{jwt}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/comments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "comments"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"   \",\n  \"postId\": \"{{postId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Create comment on post",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const c = pm.response.json();",
+                  "pm.test('returns comment', () => {",
+                  "  pm.expect(c.id).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);",
+                  "  pm.expect(c.text, 'text is trimmed').to.eql('Top-level comment ' + pm.collectionVariables.get('runId'));",
+                  "  pm.expect(c.parentCommentId).to.be.null;",
+                  "  pm.expect(c.replies).to.eql([]);",
+                  "  pm.expect(c.author.id).to.eql(pm.collectionVariables.get('userIdA'));",
+                  "});",
+                  "pm.collectionVariables.set('commentId', c.id);"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "jwt={{jwt}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/comments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "comments"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"  Top-level comment {{runId}}  \",\n  \"postId\": \"{{postId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Reply to comment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const r = pm.response.json();",
+                  "pm.test('reply references parent', () => pm.expect(r.parentCommentId).to.eql(pm.collectionVariables.get('commentId')));",
+                  "pm.collectionVariables.set('replyId', r.id);"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "jwt={{jwt}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/comments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "comments"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"Reply {{runId}}\",\n  \"postId\": \"{{postId}}\",\n  \"parentCommentId\": \"{{commentId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Get comments for post",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const list = pm.response.json();",
+                  "pm.test('only top-level comments are returned', () => {",
+                  "  pm.expect(list).to.have.lengthOf(1);",
+                  "  pm.expect(list[0].id).to.eql(pm.collectionVariables.get('commentId'));",
+                  "});",
+                  "pm.test('reply is nested under parent', () => {",
+                  "  pm.expect(list[0].replies).to.have.lengthOf(1);",
+                  "  pm.expect(list[0].replies[0].id).to.eql(pm.collectionVariables.get('replyId'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/comments?postId={{postId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "comments"
+              ],
+              "query": [
+                {
+                  "key": "postId",
+                  "value": "{{postId}}"
+                }
+              ]
+            },
+            "description": ""
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 Media & Videos",
+      "description": "Media.Api /api/media and /api/videos. Gateway policy upload-policy: 3 req/min per IP shared by BOTH routes, so this folder is slow (the throttle waits).",
+      "item": [
+        {
+          "name": "Upload image - unauthenticated",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "multipart/form-data; boundary=PostmanBoundary7MA4YWxkTrZu0gW"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/media/upload-image",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "media",
+                "upload-image"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "--PostmanBoundary7MA4YWxkTrZu0gW\r\nContent-Disposition: form-data; name=\"file\"; filename=\"pixel.svg\"\r\nContent-Type: image/svg+xml\r\n\r\n<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"1\" height=\"1\"><rect width=\"1\" height=\"1\"/></svg>\r\n--PostmanBoundary7MA4YWxkTrZu0gW--\r\n"
+            }
+          }
+        },
+        {
+          "name": "Upload image - not an image",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 400', () => pm.response.to.have.status(400));",
+                  "pm.test('explains image-only', () => pm.expect(pm.response.text()).to.include('Only image files'));"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "jwt={{jwt}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "multipart/form-data; boundary=PostmanBoundary7MA4YWxkTrZu0gW"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/media/upload-image",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "media",
+                "upload-image"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "--PostmanBoundary7MA4YWxkTrZu0gW\r\nContent-Disposition: form-data; name=\"file\"; filename=\"notes.txt\"\r\nContent-Type: text/plain\r\n\r\nhello\r\n--PostmanBoundary7MA4YWxkTrZu0gW--\r\n"
+            }
+          }
+        },
+        {
+          "name": "Upload image",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const url = pm.response.json().url;",
+                  "pm.test('returns absolute url', () => pm.expect(url).to.match(/^https?:\\/\\//));",
+                  "pm.collectionVariables.set('imageUrl', url);",
+                  "if (url) {",
+                  "  pm.sendRequest(url, (err, res) => {",
+                  "    pm.test('uploaded image is publicly readable', () => {",
+                  "      pm.expect(err).to.be.null;",
+                  "      pm.expect(res.code).to.eql(200);",
+                  "    });",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "jwt={{jwt}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "multipart/form-data; boundary=PostmanBoundary7MA4YWxkTrZu0gW"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/media/upload-image",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "media",
+                "upload-image"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "--PostmanBoundary7MA4YWxkTrZu0gW\r\nContent-Disposition: form-data; name=\"file\"; filename=\"pixel.svg\"\r\nContent-Type: image/svg+xml\r\n\r\n<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"1\" height=\"1\"><rect width=\"1\" height=\"1\"/></svg>\r\n--PostmanBoundary7MA4YWxkTrZu0gW--\r\n"
+            }
+          }
+        },
+        {
+          "name": "List videos",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('paged response shape', () => {",
+                  "  pm.expect(body.items).to.be.an('array');",
+                  "  pm.expect(body.items.length).to.be.at.most(12);",
+                  "  pm.expect(body.totalCount).to.be.a('number');",
+                  "  pm.expect(body.page).to.eql(1);",
+                  "  pm.expect(body.pageSize).to.eql(12);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/videos?page=1&pageSize=12",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "videos"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "12"
+                }
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Upload video - unauthenticated",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "multipart/form-data; boundary=PostmanBoundary7MA4YWxkTrZu0gW"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/videos/upload",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "videos",
+                "upload"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "--PostmanBoundary7MA4YWxkTrZu0gW\r\nContent-Disposition: form-data; name=\"title\"\r\n\r\nShould fail\r\n--PostmanBoundary7MA4YWxkTrZu0gW\r\nContent-Disposition: form-data; name=\"file\"; filename=\"clip.mp4\"\r\nContent-Type: video/mp4\r\n\r\nnot really a video\r\n--PostmanBoundary7MA4YWxkTrZu0gW--\r\n"
+            }
+          }
+        },
+        {
+          "name": "Upload video",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 202', () => pm.response.to.have.status(202));",
+                  "const body = pm.response.json();",
+                  "pm.test('returns id and processing message', () => {",
+                  "  pm.expect(body.id).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);",
+                  "  pm.expect(body.message).to.eql('video processing');",
+                  "});",
+                  "pm.collectionVariables.set('videoId', body.id);"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "jwt={{jwt}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "multipart/form-data; boundary=PostmanBoundary7MA4YWxkTrZu0gW"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/videos/upload",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "videos",
+                "upload"
+              ]
+            },
+            "description": "Uploads a dummy (non-playable) file: the endpoint only queues it, so background processing will mark it Failed and it will not appear in the Ready list.",
+            "body": {
+              "mode": "raw",
+              "raw": "--PostmanBoundary7MA4YWxkTrZu0gW\r\nContent-Disposition: form-data; name=\"title\"\r\n\r\nPostman video {{runId}}\r\n--PostmanBoundary7MA4YWxkTrZu0gW\r\nContent-Disposition: form-data; name=\"description\"\r\n\r\nUploaded by the Postman test suite\r\n--PostmanBoundary7MA4YWxkTrZu0gW\r\nContent-Disposition: form-data; name=\"file\"; filename=\"clip.mp4\"\r\nContent-Type: video/mp4\r\n\r\nnot really a video\r\n--PostmanBoundary7MA4YWxkTrZu0gW--\r\n"
+            }
+          }
+        },
+        {
+          "name": "Get video by id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const v = pm.response.json();",
+                  "pm.test('returns the uploaded video', () => {",
+                  "  pm.expect(v.id).to.eql(pm.collectionVariables.get('videoId'));",
+                  "  pm.expect(v.title).to.eql('Postman video ' + pm.collectionVariables.get('runId'));",
+                  "  pm.expect(v.description).to.eql('Uploaded by the Postman test suite');",
+                  "  pm.expect(v.author.id).to.eql(pm.collectionVariables.get('userIdA'));",
+                  "});",
+                  "pm.test('view counter incremented', () => pm.expect(v.viewsCount).to.be.at.least(1));"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/videos/{{videoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "videos",
+                "{{videoId}}"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Get video - not found",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/videos/00000000-0000-0000-0000-000000000001",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "videos",
+                "00000000-0000-0000-0000-000000000001"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Create comment on video",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('videoCommentId', pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "jwt={{jwt}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/comments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "comments"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"Video comment {{runId}}\",\n  \"videoId\": \"{{videoId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Get comments for video",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('contains the video comment', () => {",
+                  "  const ids = pm.response.json().map(c => c.id);",
+                  "  pm.expect(ids).to.eql([pm.collectionVariables.get('videoCommentId')]);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/comments?videoId={{videoId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "comments"
+              ],
+              "query": [
+                {
+                  "key": "videoId",
+                  "value": "{{videoId}}"
+                }
+              ]
+            },
+            "description": ""
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 Chat",
+      "description": "Chat.Api /api/chats and SignalR negotiate on /hubs/chat. Sending messages needs a SignalR client and is not covered here.",
+      "item": [
+        {
+          "name": "Chat users - unauthenticated",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/chats/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "chats",
+                "users"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Chat users",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const ids = pm.response.json().map(u => u.id);",
+                  "pm.test('includes user B', () => pm.expect(ids).to.include(pm.collectionVariables.get('userIdB')));",
+                  "pm.test('excludes current user', () => pm.expect(ids).to.not.include(pm.collectionVariables.get('userIdA')));"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "jwt={{jwt}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/chats/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "chats",
+                "users"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Messages with user B",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('new conversation is empty', () => pm.expect(pm.response.json()).to.eql([]));"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "jwt={{jwt}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/chats/{{userIdB}}/messages",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "chats",
+                "{{userIdB}}",
+                "messages"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Messages - invalid user id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 404 (route constraint)', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "jwt={{jwt}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/chats/not-a-guid/messages",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "chats",
+                "not-a-guid",
+                "messages"
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Hub negotiate - unauthenticated",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/hubs/chat/negotiate?negotiateVersion=1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "hubs",
+                "chat",
+                "negotiate"
+              ],
+              "query": [
+                {
+                  "key": "negotiateVersion",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": ""
+          }
+        },
+        {
+          "name": "Hub negotiate",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('returns connection token', () => pm.expect(body.connectionToken).to.be.a('string').and.not.empty);",
+                  "pm.test('offers WebSockets transport', () => {",
+                  "  pm.expect(body.availableTransports.map(t => t.transport)).to.include('WebSockets');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "jwt={{jwt}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/hubs/chat/negotiate?negotiateVersion=1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "hubs",
+                "chat",
+                "negotiate"
+              ],
+              "query": [
+                {
+                  "key": "negotiateVersion",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": ""
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 Logout",
+      "description": "",
+      "item": [
+        {
+          "name": "Logout",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('expires jwt cookie', () => {",
+                  "  const c = pm.response.headers.all()",
+                  "    .filter(h => h.key.toLowerCase() === 'set-cookie')",
+                  "    .map(h => h.value)",
+                  "    .find(v => v.startsWith('jwt='));",
+                  "  pm.expect(c, 'Set-Cookie: jwt=').to.exist;",
+                  "  pm.expect(c).to.match(/expires=Thu, 01 Jan 1970/i);",
+                  "});",
+                  "pm.collectionVariables.unset('jwt');"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Cookie",
+                "value": "jwt={{jwt}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "logout"
+              ]
+            },
+            "description": ""
+          }
+        }
+      ]
+    },
+    {
+      "name": "07 Rate limiting",
+      "description": "Deliberately exceeds auth-policy (5/min) until the gateway answers 429. Runner only (uses setNextRequest). Leaves /api/auth blocked for ~1 minute.",
+      "item": [
+        {
+          "name": "RL Burst auth until 429",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const attempt = Number(pm.collectionVariables.get('rlAttempt') || 0) + 1;",
+                  "const next = (name) => (pm.execution && pm.execution.setNextRequest) ? pm.execution.setNextRequest(name) : postman.setNextRequest(name);",
+                  "if (pm.response.code === 429) {",
+                  "  pm.collectionVariables.unset('rlAttempt');",
+                  "  pm.test('gateway returns 429 after limit (attempt ' + attempt + ')', () => pm.expect(attempt).to.be.at.most(6));",
+                  "  pm.test('429 body is JSON with status', () => {",
+                  "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "    pm.expect(pm.response.json().status).to.eql(429);",
+                  "  });",
+                  "} else if (attempt < 10) {",
+                  "  pm.collectionVariables.set('rlAttempt', attempt);",
+                  "  next(pm.info.requestName);",
+                  "} else {",
+                  "  pm.collectionVariables.unset('rlAttempt');",
+                  "  pm.test('gateway should return 429 within 10 requests', () => pm.expect.fail('no 429 after ' + attempt + ' requests'));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableCookies": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "users"
+              ]
+            },
+            "description": ""
+          }
+        }
+      ]
+    }
+  ]
+}
