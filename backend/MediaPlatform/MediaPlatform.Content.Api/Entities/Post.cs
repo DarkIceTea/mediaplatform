@@ -12,5 +12,6 @@ public class Post
     public string AuthorName { get; set; } = string.Empty;
     public string AuthorDisplayName { get; set; } = string.Empty;
 
+    public List<PostLike> Likes { get; set; } = [];
     public List<Comment> Comments { get; set; } = [];
 }
