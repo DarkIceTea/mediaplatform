@@ -27,4 +27,11 @@ export class PostService {
     formData.append('file', file);
     return this.http.post<{ url: string }>(`${this.apiUrl}/media/upload-image`, formData);
   }
+  
+  toggleLike(postId: string) {
+    return this.http.post<{ isLiked: boolean; likesCount: number }>(
+      `${this.apiUrl}/posts/${postId}/like`, 
+      {}
+    );
+  }
 }
