@@ -22,4 +22,5 @@ public class Video
     public Guid AuthorId { get; set; }
     public string AuthorName { get; set; } = string.Empty;
     public string AuthorDisplayName { get; set; } = string.Empty;
+    public List<VideoLike> Likes { get; set; } = [];
 }

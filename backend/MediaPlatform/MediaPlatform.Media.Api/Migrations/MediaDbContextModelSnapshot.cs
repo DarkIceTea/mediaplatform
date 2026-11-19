@@ -69,6 +69,38 @@ namespace MediaPlatform.Media.Api.Migrations
 
                     b.ToTable("Videos");
                 });
+
+            modelBuilder.Entity("MediaPlatform.Media.Api.Entities.VideoLike", b =>
+                {
+                    b.Property<Guid>("VideoId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("VideoId", "UserId");
+
+                    b.ToTable("VideoLikes");
+                });
+
+            modelBuilder.Entity("MediaPlatform.Media.Api.Entities.VideoLike", b =>
+                {
+                    b.HasOne("MediaPlatform.Media.Api.Entities.Video", "Video")
+                        .WithMany("Likes")
+                        .HasForeignKey("VideoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Video");
+                });
+
+            modelBuilder.Entity("MediaPlatform.Media.Api.Entities.Video", b =>
+                {
+                    b.Navigation("Likes");
+                });
 #pragma warning restore 612, 618
         }
     }
