@@ -11,4 +11,6 @@ export interface VideoItem {
   viewsCount: number;
   createdAt: string;
   author: PostAuthor;
+  likesCount: number; 
+  isLiked: boolean; 
 }
