@@ -15,12 +15,11 @@ namespace MediaPlatform.Media.Api.Controllers;
 public class VideosController : ControllerBase
 {
     private readonly MediaDbContext _context;
-    private readonly VideoProcessingQueue _queue;
-
-    public VideosController(MediaDbContext context, VideoProcessingQueue queue)
+    private readonly IPublishEndpoint _publishEndpoint;
+    public VideosController(MediaDbContext context, IPublishEndpoint publishEndpoint)
     {
         _context = context;
-        _queue = queue;
+        _publishEndpoint = publishEndpoint;
     }
 
     [HttpGet]
@@ -82,8 +81,9 @@ public class VideosController : ControllerBase
         _context.Videos.Add(video);
         await _context.SaveChangesAsync();
 
-        _queue.Enqueue(new VideoProcessingTask(video.Id, tempFilePath, request.File.FileName));
-        return Accepted(new { id = video.Id, message = "video processing" });
+        await _publishEndpoint.Publish(new VideoUploadedEvent(video.Id, tempFilePath, request.File.FileName));
+
+        return Accepted(new { id = video.Id, message = "Video send to RabbitMQ and processing" });
     }
 }
 

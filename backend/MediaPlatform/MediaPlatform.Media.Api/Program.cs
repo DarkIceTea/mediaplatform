@@ -1,9 +1,13 @@
 using System.Text;
+using MassTransit;
+using MediaPlatform.Media.Api.Consumers;
 using MediaPlatform.Media.Api.Data;
 using MediaPlatform.Media.Api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Xabe.FFmpeg;
+using Xabe.FFmpeg.Downloader;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,9 +18,37 @@ builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(o => 
 
 builder.AddNpgsqlDbContext<MediaDbContext>("mediadb");
 
+if (OperatingSystem.IsWindows())
+{
+    var ffmpegPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ffmpeg");
+    if (!Directory.Exists(ffmpegPath) || !File.Exists(Path.Combine(ffmpegPath, "ffmpeg.exe")))
+    {
+        await FFmpegDownloader.GetLatestVersion(FFmpegVersion.Official, ffmpegPath);
+    }
+    FFmpeg.SetExecutablesPath(ffmpegPath);
+}
+else
+{
+    FFmpeg.SetExecutablesPath("/usr/bin");
+}
+
 builder.Services.AddScoped<IFileStorageService, MinioStorageService>();
-builder.Services.AddSingleton<VideoProcessingQueue>();
-builder.Services.AddHostedService<VideoProcessingBackgroundService>();
+
+builder.Services.AddMassTransit(x =>
+{
+  
+    x.AddConsumer<ProcessVideoConsumer>();
+
+    x.UsingRabbitMq((context, cfg) =>
+    {
+        var connectionString = builder.Configuration.GetConnectionString("messaging");
+        cfg.Host(connectionString);
+
+        cfg.UseMessageRetry(r => r.Interval(3, TimeSpan.FromSeconds(5)));
+
+        cfg.ConfigureEndpoints(context);
+    });
+});
 
 var jwtSecret = builder.Configuration["JwtSettings:Secret"]!;
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
