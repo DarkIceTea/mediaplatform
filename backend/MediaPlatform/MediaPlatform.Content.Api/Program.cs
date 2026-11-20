@@ -41,12 +41,23 @@ builder.Services.AddControllers();
 
 var app = builder.Build();
 
+if (args.Contains("--migrate"))
+{
+    Console.WriteLine("⏳ Start Migration blogdb...");
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<ContentDbContext>();
+    await db.Database.MigrateAsync();
+    Console.WriteLine("✅ Migrations blogdb successfully applied!");
+    return;
+}
+
+if (app.Environment.IsDevelopment())
+{
+    using var scope = app.Services.CreateScope();
+    scope.ServiceProvider.GetRequiredService<ContentDbContext>().Database.Migrate();
+}
+
 app.MapDefaultEndpoints();
-
-
-using var scope = app.Services.CreateScope();
-scope.ServiceProvider.GetRequiredService<ContentDbContext>().Database.Migrate();
-
 
 app.UseAuthentication();
 app.UseAuthorization();

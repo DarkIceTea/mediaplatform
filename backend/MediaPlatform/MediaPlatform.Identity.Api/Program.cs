@@ -66,11 +66,23 @@ builder.WebHost.ConfigureKestrel(options => options.Limits.MaxRequestBodySize = 
 
 var app = builder.Build();
 
-app.MapDefaultEndpoints();
+if (args.Contains("--migrate"))
+{
+    Console.WriteLine("⏳ Start Migration identitydb...");
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<AuthDbContext>();
+    await db.Database.MigrateAsync();
+    Console.WriteLine("✅ Migrations identitydb successfully applied!");
+    return; 
+}
 
-using var scope = app.Services.CreateScope();
-var db = scope.ServiceProvider.GetRequiredService<AuthDbContext>();
-db.Database.Migrate();
+if (app.Environment.IsDevelopment())
+{
+    using var scope = app.Services.CreateScope();
+    scope.ServiceProvider.GetRequiredService<AuthDbContext>().Database.Migrate();
+}
+
+app.MapDefaultEndpoints();
 
 
 app.UseAuthentication();

@@ -53,12 +53,23 @@ builder.Services.AddControllers();
 
 var app = builder.Build();
 
+if (args.Contains("--migrate"))
+{
+    Console.WriteLine("⏳ Start Migration chatdb...");
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
+    await db.Database.MigrateAsync();
+    Console.WriteLine("✅  Migrations chatdb successfully applied!");
+    return;
+}
+
+if (app.Environment.IsDevelopment())
+{
+    using var scope = app.Services.CreateScope();
+    scope.ServiceProvider.GetRequiredService<ChatDbContext>().Database.Migrate();
+}
+
 app.MapDefaultEndpoints();
-
-
-using var scope = app.Services.CreateScope();
-scope.ServiceProvider.GetRequiredService<ChatDbContext>().Database.Migrate();
-
 
 app.UseAuthentication();
 app.UseAuthorization();

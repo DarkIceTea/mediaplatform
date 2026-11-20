@@ -79,12 +79,23 @@ builder.Services.AddControllers();
 
 var app = builder.Build();
 
+if (args.Contains("--migrate"))
+{
+    Console.WriteLine("⏳ Start Migration mediadb...");
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<MediaDbContext>();
+    await db.Database.MigrateAsync();
+    Console.WriteLine("✅ Migrations mediadb successfully applied!");
+    return;
+}
+
+if (app.Environment.IsDevelopment())
+{
+    using var scope = app.Services.CreateScope();
+    scope.ServiceProvider.GetRequiredService<MediaDbContext>().Database.Migrate();
+}
+
 app.MapDefaultEndpoints();
-
-
-using var scope = app.Services.CreateScope();
-scope.ServiceProvider.GetRequiredService<MediaDbContext>().Database.Migrate();
-
 
 app.UseAuthentication();
 app.UseAuthorization();
