@@ -7,6 +7,9 @@ var jwtAudience = "MediaPlatformClient";
 var postgres = builder.AddPostgres("postgres")
     .WithDataVolume();
 
+var rabbitmq = builder.AddRabbitMQ("messaging")
+    .WithManagementPlugin();
+
 var identityDb = postgres.AddDatabase("identitydb");
 var mediaDb = postgres.AddDatabase("mediadb");
 var blogDb = postgres.AddDatabase("blogdb"); 
@@ -32,7 +35,8 @@ var mediaApi = builder.AddProject<Projects.MediaPlatform_Media_Api>("media-api")
     .WithEnvironment("JwtSettings__Secret", jwtSecret)
     .WithEnvironment("JwtSettings__Issuer", jwtIssuer)
     .WithEnvironment("JwtSettings__Audience", jwtAudience)
-    .WithReference(mediaDb);
+    .WithReference(mediaDb)
+    .WithReference(rabbitmq);
 
 var contentApi = builder.AddProject<Projects.MediaPlatform_Content_Api>("content-api")
     .WithEnvironment("JwtSettings__Secret", jwtSecret)

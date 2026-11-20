@@ -5,6 +5,8 @@ using MediaPlatform.Media.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using MassTransit; 
+using MediaPlatform.Media.Api.Messages;
 
 namespace MediaPlatform.Media.Api.Controllers;
 
