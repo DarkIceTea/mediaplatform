@@ -1,9 +1,21 @@
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
+
+builder.Services.Configure<KestrelServerOptions>(options =>
+{
+    options.Limits.MaxRequestBodySize = 500 * 1024 * 1024; 
+});
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Limits.MaxRequestBodySize = 500 * 1024 * 1024; 
+});
+
 
 builder.Services.AddCors(options =>
 {
@@ -71,6 +83,8 @@ builder.Services.AddReverseProxy()
 var app = builder.Build();
 
 app.MapDefaultEndpoints();
+
+
 
 app.UseCors("AllowAngular");
 
