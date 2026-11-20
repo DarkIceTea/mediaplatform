@@ -63,19 +63,21 @@ public class PostsController : ControllerBase
             return Ok(cachedPost);
         }
 
+        var currentUserIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        Guid? currentUserId = currentUserIdStr != null ? Guid.Parse(currentUserIdStr) : null;
+
         var post = await _context.Posts
             .AsNoTracking()
             .Where(p => p.Id == id)
             .Select(p => new PostDto(
                 p.Id, p.Title, p.Content, p.CoverImageUrl, p.CreatedAt,
-                new AuthorDto(p.AuthorId, p.AuthorName, p.AuthorDisplayName)
+                new AuthorDto(p.AuthorId, p.AuthorName, p.AuthorDisplayName),
+                p.Likes.Count,
+                currentUserId != null && p.Likes.Any(l => l.UserId == currentUserId.Value)
             ))
             .FirstOrDefaultAsync();
 
-        if (post == null) return NotFound("Post Not  Found");
-
-        await _cache.SetRecordAsync(cacheKey, post, TimeSpan.FromMinutes(10));
-
+        if (post == null) return NotFound("Статья не найдена");
         return Ok(post);
     }
 
@@ -104,9 +106,51 @@ public class PostsController : ControllerBase
 
         return CreatedAtAction(nameof(GetPostById), new { id = post.Id }, new { id = post.Id });
     }
+    
+    [Authorize]
+    [HttpPost("{id:guid}/like")]
+    public async Task<IActionResult> ToggleLike(Guid id)
+    {
+        var post = await _context.Posts.FindAsync(id);
+        if (post == null) return NotFound("Post not found");
+
+        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
+        var existingLike = await _context.PostLikes
+            .FirstOrDefaultAsync(l => l.PostId == id && l.UserId == userId);
+
+        bool isLiked;
+        if (existingLike != null)
+        {
+            _context.PostLikes.Remove(existingLike);
+            isLiked = false;
+        }
+        else
+        {
+            _context.PostLikes.Add(new PostLike { PostId = id, UserId = userId });
+            isLiked = true;
+        }
+
+        await _context.SaveChangesAsync();
+
+        await _cache.RemoveAsync($"post_{id}");
+
+        var likesCount = await _context.PostLikes.CountAsync(l => l.PostId == id);
+        return Ok(new LikeStatusResponse(isLiked, likesCount));
+    }
 }
 
 public record PagedPostsResponse(List<PostDto> Items, int TotalCount, int Page, int PageSize);
 public record CreatePostRequest(string Title, string Content, string? CoverImageUrl);
 public record AuthorDto(Guid Id, string UserName, string DisplayName);
-public record PostDto(Guid Id, string Title, string Content, string? CoverImageUrl, DateTime CreatedAt, AuthorDto Author);
+public record LikeStatusResponse(bool IsLiked, int LikesCount);
+public record PostDto(
+    Guid Id,
+    string Title,
+    string Content,
+    string? CoverImageUrl,
+    DateTime CreatedAt,
+    AuthorDto Author,
+    int LikesCount = 0,
+    bool IsLiked = false
+);

@@ -39,15 +39,26 @@ public class VideosController : ControllerBase
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetVideoById(Guid id)
     {
-        var video = await _context.Videos.FirstOrDefaultAsync(v => v.Id == id);
-        if (video == null) return NotFound("video not found");
+        var currentUserIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        Guid? currentUserId = currentUserIdStr != null ? Guid.Parse(currentUserIdStr) : null;
+
+        var video = await _context.Videos
+            .Include(v => v.Likes)
+            .FirstOrDefaultAsync(v => v.Id == id);
+
+        if (video == null) return NotFound("Video not found");
 
         video.ViewsCount++;
         await _context.SaveChangesAsync();
 
+        var isLiked = currentUserId != null && video.Likes.Any(l => l.UserId == currentUserId.Value);
+
         return Ok(new VideoDto(
-            video.Id, video.Title, video.Description, video.VideoUrl, video.ThumbnailUrl, video.DurationSeconds, video.ViewsCount, video.CreatedAt,
-            new AuthorDto(video.AuthorId, video.AuthorName, video.AuthorDisplayName)
+            video.Id, video.Title, video.Description, video.VideoUrl, video.ThumbnailUrl,
+            video.DurationSeconds, video.ViewsCount, video.CreatedAt,
+            new AuthorDto(video.AuthorId, video.AuthorName, video.AuthorDisplayName),
+            video.Likes.Count,
+            isLiked
         ));
     }
 
@@ -85,8 +96,51 @@ public class VideosController : ControllerBase
 
         return Accepted(new { id = video.Id, message = "Video send to RabbitMQ and processing" });
     }
+    
+    [Authorize]
+    [HttpPost("{id:guid}/like")]
+    public async Task<IActionResult> ToggleLike(Guid id)
+    {
+        var video = await _context.Videos.FindAsync(id);
+        if (video == null) return NotFound("Video not found");
+
+        var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
+        var existingLike = await _context.VideoLikes
+            .FirstOrDefaultAsync(l => l.VideoId == id && l.UserId == userId);
+
+        bool isLiked;
+        if (existingLike != null)
+        {
+            _context.VideoLikes.Remove(existingLike);
+            isLiked = false;
+        }
+        else
+        {
+            _context.VideoLikes.Add(new VideoLike { VideoId = id, UserId = userId });
+            isLiked = true;
+        }
+
+        await _context.SaveChangesAsync();
+
+        var likesCount = await _context.VideoLikes.CountAsync(l => l.VideoId == id);
+        return Ok(new LikeStatusResponse(isLiked, likesCount));
+    }
 }
 
 public record UploadVideoRequest(string Title, string? Description, IFormFile File);
 public record AuthorDto(Guid Id, string UserName, string DisplayName);
-public record VideoDto(Guid Id, string Title, string? Description, string VideoUrl, string? ThumbnailUrl, double DurationSeconds, long ViewsCount, DateTime CreatedAt, AuthorDto Author);
+public record LikeStatusResponse(bool IsLiked, int LikesCount);
+public record VideoDto(
+    Guid Id,
+    string Title,
+    string? Description,
+    string VideoUrl,
+    string? ThumbnailUrl,
+    double DurationSeconds,
+    long ViewsCount,
+    DateTime CreatedAt,
+    AuthorDto Author,
+    int LikesCount = 0,
+    bool IsLiked = false
+);

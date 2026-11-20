@@ -11,6 +11,8 @@ export interface Post {
   coverImageUrl?: string;
   createdAt: string;
   author: PostAuthor;
+  likesCount: number;
+  isLiked: boolean;
 }
 
 export interface CreatePostRequest {

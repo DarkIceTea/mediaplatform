@@ -16,6 +16,14 @@
       <span>Автор: <b>{{ post()?.author?.displayName }}</b></span>
       <span>•</span>
       <span>{{ post()?.createdAt | date:'longDate' }}</span>
+      <button 
+        class="like-btn" 
+        [class.liked]="post()?.isLiked"
+        [disabled]="!authService.isAuthenticated()"
+        (click)="onToggleLike()">
+        <span class="heart">{{ post()?.isLiked ? '❤️' : '🤍' }}</span>
+        <span class="count">{{ post()?.likesCount }}</span>
+      </button>
     </div>
 
     <div class="content">

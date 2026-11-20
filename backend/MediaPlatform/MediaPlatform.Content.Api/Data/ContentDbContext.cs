@@ -11,11 +11,19 @@ public class ContentDbContext : DbContext
 
     public DbSet<Post> Posts => Set<Post>();
     public DbSet<Comment> Comments => Set<Comment>();
-
+    public DbSet<PostLike> PostLikes => Set<PostLike>();
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
+        builder.Entity<PostLike>(entity =>
+        {
+            entity.HasKey(l => new { l.PostId, l.UserId });
 
+            entity.HasOne(l => l.Post)
+                .WithMany(p => p.Likes)
+                .HasForeignKey(l => l.PostId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
         builder.Entity<Comment>(entity =>
         {
             entity.HasOne(c => c.ParentComment)
@@ -27,6 +35,7 @@ public class ContentDbContext : DbContext
                 .WithMany(p => p.Comments)
                 .HasForeignKey(c => c.PostId)
                 .OnDelete(DeleteBehavior.Cascade);
+            
         });
     }
 }

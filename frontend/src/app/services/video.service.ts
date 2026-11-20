@@ -5,6 +5,7 @@ import { Observable } from 'rxjs';
 import { PagedResult } from '../models/post.models';
 import { VideoItem } from '../models/video.models';
 
+
 @Injectable({
   providedIn: 'root'
 })
@@ -25,5 +26,12 @@ export class VideoService {
       reportProgress: true
     });
     return this.http.request(req);
+  }
+
+  toggleLike(videoId: string) {
+    return this.http.post<{ isLiked: boolean; likesCount: number }>(
+      `${this.apiUrl}/${videoId}/like`,
+      {}
+    );
   }
 }

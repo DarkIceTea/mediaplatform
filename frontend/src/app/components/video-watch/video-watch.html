@@ -26,6 +26,14 @@
         <span>{{ video()?.viewsCount }} просмотров</span>
         <span>•</span>
         <span>{{ video()?.createdAt | date:'longDate' }}</span>
+          <button 
+          class="like-btn" 
+          [class.liked]="video()?.isLiked"
+          [disabled]="!authService.isAuthenticated()"
+          (click)="onToggleLike()">
+          <span class="heart">{{ video()?.isLiked ? '❤️' : '🤍' }}</span>
+          <span class="count">{{ video()?.likesCount }}</span>
+        </button>
       </div>
     </div>
 
