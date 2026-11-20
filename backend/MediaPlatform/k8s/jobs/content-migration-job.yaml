@@ -1,0 +1,21 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: content-migration-job
+  namespace: mediaplatform
+spec:
+  backoffLimit: 2
+  ttlSecondsAfterFinished: 300
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: migrator
+          image: ghcr.io/darkicetea/mediaplatform-content-api:latest
+          imagePullPolicy: IfNotPresent
+          args: ["--migrate"]
+          envFrom:
+            - configMapRef:
+                name: content-api-env
+            - secretRef:
+                name: content-api-secrets
