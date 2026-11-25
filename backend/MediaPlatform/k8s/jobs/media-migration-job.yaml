@@ -12,7 +12,7 @@ spec:
       containers:
         - name: migrator
           image: ghcr.io/darkicetea/mediaplatform-media-api:latest
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           args: ["--migrate"]
           envFrom:
             - configMapRef:

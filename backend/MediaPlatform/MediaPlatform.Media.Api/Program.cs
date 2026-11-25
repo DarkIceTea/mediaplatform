@@ -39,15 +39,32 @@ builder.Services.AddMassTransit(x =>
   
     x.AddConsumer<ProcessVideoConsumer>();
 
-    x.UsingRabbitMq((context, cfg) =>
+    var connectionString = builder.Configuration.GetConnectionString("messaging");
+
+    //Service bus azure
+    if (connectionString != null && connectionString.Contains("servicebus.windows.net"))
     {
-        var connectionString = builder.Configuration.GetConnectionString("messaging");
-        cfg.Host(connectionString);
-
-        cfg.UseMessageRetry(r => r.Interval(3, TimeSpan.FromSeconds(5)));
-
-        cfg.ConfigureEndpoints(context);
-    });
+        x.UsingAzureServiceBus((context, cfg) =>
+        {
+            cfg.Host(connectionString);
+            
+            cfg.ReceiveEndpoint("video-processing", e =>
+            {
+                e.ConfigureConsumeTopology = false; 
+                e.ConfigureConsumer<ProcessVideoConsumer>(context);
+            });
+        });
+    }
+    else
+    {
+        //RabbitMq
+        x.UsingRabbitMq((context, cfg) =>
+        {
+            cfg.Host(connectionString);
+            cfg.UseMessageRetry(r => r.Interval(3, TimeSpan.FromSeconds(5)));
+            cfg.ConfigureEndpoints(context);
+        });
+    }
 });
 
 var jwtSecret = builder.Configuration["JwtSettings:Secret"]!;

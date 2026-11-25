@@ -12,8 +12,8 @@ spec:
       containers:
         - name: migrator
           image: ghcr.io/darkicetea/mediaplatform-identity-api:latest
-          imagePullPolicy: IfNotPresent
-          args: ["--migrate"]
+          imagePullPolicy: Always
+          command: [ "dotnet", "MediaPlatform.Identity.Api.dll", "--migrate" ]
           envFrom:
             - configMapRef:
                 name: identity-api-env

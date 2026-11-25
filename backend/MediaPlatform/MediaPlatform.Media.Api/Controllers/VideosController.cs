@@ -16,10 +16,12 @@ public class VideosController : ControllerBase
 {
     private readonly MediaDbContext _context;
     private readonly IPublishEndpoint _publishEndpoint;
-    public VideosController(MediaDbContext context, IPublishEndpoint publishEndpoint)
+    private readonly ISendEndpointProvider _sendEndpointProvider;
+    public VideosController(MediaDbContext context, IPublishEndpoint publishEndpoint,  ISendEndpointProvider sendEndpointProvider)
     {
         _context = context;
         _publishEndpoint = publishEndpoint;
+        _sendEndpointProvider = sendEndpointProvider;
     }
 
     [HttpGet]
@@ -92,9 +94,10 @@ public class VideosController : ControllerBase
         _context.Videos.Add(video);
         await _context.SaveChangesAsync();
 
-        await _publishEndpoint.Publish(new VideoUploadedEvent(video.Id, tempFilePath, request.File.FileName));
+        var sendEndpoint = await _sendEndpointProvider.GetSendEndpoint(new Uri("queue:video-processing"));
+        await sendEndpoint.Send(new VideoUploadedEvent(video.Id, tempFilePath, request.File.FileName));
 
-        return Accepted(new { id = video.Id, message = "Video send to RabbitMQ and processing" });
+        return Accepted(new { id = video.Id, message = "Video send to Queue and processing" });
     }
     
     [Authorize]
