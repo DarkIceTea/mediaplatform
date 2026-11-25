@@ -28,7 +28,7 @@ public class CommentsController : ControllerBase
         else if (videoId.HasValue)
             query = query.Where(c => c.VideoId == videoId.Value);
         else
-            return BadRequest("Не указан postId или videoId");
+            return BadRequest("Either postId or videoId must be specified");
 
         var comments = await query
             .Include(c => c.Replies)
@@ -54,7 +54,7 @@ public class CommentsController : ControllerBase
     public async Task<IActionResult> CreateComment([FromBody] CreateCommentRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.Text))
-            return BadRequest("Текст комментария не может быть пустым");
+            return BadRequest("Comment text cannot be empty");
 
         var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
         var userName = User.FindFirstValue(ClaimTypes.Name) ?? "";

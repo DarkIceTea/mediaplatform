@@ -33,7 +33,7 @@ export class VideoUpload {
 
   onSubmit() {
     if (!this.selectedFile || !this.title.trim()) {
-      this.errorMessage = 'Заполните название и выберите видеофайл';
+      this.errorMessage = 'Enter a title and select a video file';
       return;
     }
 
@@ -48,17 +48,17 @@ export class VideoUpload {
 
     this.videoService.uploadVideo(formData).subscribe({
       next: (event) => {
-        // 1. Отслеживаем передачу байтов
+        // 1. Track upload progress (bytes sent)
         if (event.type === HttpEventType.UploadProgress && event.total) {
           const percent = Math.round((100 * event.loaded) / event.total);
           this.uploadProgress.set(percent);
         } 
-        // 2. Файл полностью ушел на бэкенд, сервер начал обработку
+        // 2. File fully sent to the backend; the server has started processing
         else if (event.type === HttpEventType.Response) {
           this.isUploading.set(false);
           this.isProcessing.set(true);
           
-          // Даем воркеру пару секунд на нарезку кадра и возвращаем на главную
+          // Give the worker a couple of seconds to extract the thumbnail, then return to the feed
           setTimeout(() => {
             this.router.navigate(['/videos']);
           }, 3000);
@@ -66,7 +66,7 @@ export class VideoUpload {
       },
       error: (err) => {
         console.error(err);
-        this.errorMessage = err.error || 'Ошибка при загрузке видео';
+        this.errorMessage = err.error || 'Failed to upload video';
         this.isUploading.set(false);
       }
     });

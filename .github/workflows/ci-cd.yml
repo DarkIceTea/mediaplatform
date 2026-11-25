@@ -69,7 +69,7 @@ jobs:
       - name: Validate Kustomize build
         run: |
           kubectl kustomize backend/MediaPlatform/k8s > /dev/null
-          echo "Kubernetes манифесты валидны!"
+          echo "Kubernetes manifests are valid!"
           
 
 

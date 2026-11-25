@@ -1,20 +1,20 @@
 <section class="comments-section">
-  <h3>Комментарии ({{ comments().length }})</h3>
+  <h3>Comments ({{ comments().length }})</h3>
 
   @if (authService.isAuthenticated()) {
     <form (submit)="onAddComment()" class="main-form">
       <textarea 
         [(ngModel)]="newCommentText" 
         name="commentText" 
-        placeholder="Оставьте ваш комментарий..." 
+        placeholder="Leave a comment..." 
         rows="3" 
         required
       ></textarea>
-      <button type="submit">Отправить</button>
+      <button type="submit">Submit</button>
     </form>
   } @else {
     <p class="login-prompt">
-      <a routerLink="/login">Войдите</a>, чтобы оставить комментарий.
+      <a routerLink="/login">Log in</a> to leave a comment.
     </p>
   }
 
@@ -29,14 +29,14 @@
 
         @if (authService.isAuthenticated()) {
           <button class="btn-reply" (click)="replyToCommentId.set(replyToCommentId() === comment.id ? null : comment.id)">
-            {{ replyToCommentId() === comment.id ? 'Отмена' : 'Ответить' }}
+            {{ replyToCommentId() === comment.id ? 'Cancel' : 'Reply' }}
           </button>
         }
 
         @if (replyToCommentId() === comment.id) {
           <div class="reply-form">
-            <textarea [(ngModel)]="replyText" placeholder="Ваш ответ..." rows="2"></textarea>
-            <button (click)="onAddReply(comment)">Ответить</button>
+            <textarea [(ngModel)]="replyText" placeholder="Your reply..." rows="2"></textarea>
+            <button (click)="onAddReply(comment)">Reply</button>
           </div>
         }
 
@@ -55,7 +55,7 @@
         }
       </div>
     } @empty {
-      <p class="no-comments">Пока нет комментариев. Будьте первым!</p>
+      <p class="no-comments">No comments yet. Be the first!</p>
     }
   </div>
 </section>

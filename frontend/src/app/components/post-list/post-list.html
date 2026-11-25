@@ -1,13 +1,13 @@
 <div class="feed-header">
-  <h1>Лента публикаций</h1>
+  <h1>Feed</h1>
 </div>
 
 @if (isLoading()) {
-  <p class="status">Загрузка постов...</p>
+  <p class="status">Loading posts...</p>
 } @else if (posts().length === 0) {
   <div class="empty">
-    <p>Пока нет ни одной публикации.</p>
-    <a routerLink="/posts/create" class="btn">Написать первую статью!</a>
+    <p>No posts yet.</p>
+    <a routerLink="/posts/create" class="btn">Write the first post!</a>
   </div>
 } @else {
   <div class="posts-grid">

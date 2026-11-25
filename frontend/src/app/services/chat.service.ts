@@ -27,8 +27,8 @@ export class ChatService {
       .build();
 
     this.hubConnection.start()
-      .then(() => console.log('SignalR успешно подключен через Gateway!'))
-      .catch(err => console.error('Ошибка подключения сокетов:', err));
+      .then(() => console.log('SignalR connected via the gateway!'))
+      .catch(err => console.error('SignalR connection error:', err));
 
     this.hubConnection.on('ReceiveMessage', (message: ChatMessage) => {
       if (this.activeUser()?.id === message.senderId) {
@@ -53,17 +53,17 @@ export class ChatService {
   loadHistory(otherUserId: string) {
     return this.http.get<ChatMessage[]>(`${this.gatewayUrl}/api/chats/${otherUserId}/messages`).subscribe({
       next: (data) => this.messages.set(data),
-      error: (err) => console.error('Ошибка загрузки истории переписки', err)
+      error: (err) => console.error('Failed to load chat history', err)
     });
   }
 
   sendMessage(receiverId: string, content: string) {
     if (!this.hubConnection || this.hubConnection.state !== signalR.HubConnectionState.Connected) {
-      console.error('Соединение с чатом не готово');
+      console.error('Chat connection is not ready');
       return;
     }
 
     this.hubConnection.invoke('SendMessage', receiverId, content)
-      .catch(err => console.error('Ошибка отправки сообщения:', err));
+      .catch(err => console.error('Failed to send message:', err));
   }
 }

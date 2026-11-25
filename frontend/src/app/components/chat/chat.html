@@ -1,6 +1,6 @@
 <div class="chat-container">
   <aside class="sidebar">
-    <h3>Контакты</h3>
+    <h3>Contacts</h3>
     <div class="users-list">
       @for (user of users(); track user.id) {
         <div 
@@ -14,7 +14,7 @@
           </div>
         </div>
       } @empty {
-        <p class="empty-users">Других пользователей пока нет</p>
+        <p class="empty-users">No other users yet</p>
       }
     </div>
   </aside>
@@ -22,7 +22,7 @@
   <section class="dialog-area">
     @if (chatService.activeUser(); as active) {
       <div class="dialog-header">
-        <span>Диалог с: <b>{{ active.displayName }}</b></span>
+        <span>Chat with: <b>{{ active.displayName }}</b></span>
       </div>
 
       <div class="messages-container" #messagesContainer>
@@ -33,7 +33,7 @@
             <span class="time">{{ msg.sentAt | date:'shortTime' }}</span>
           </div>
         } @empty {
-          <p class="no-messages">Здесь пока нет сообщений. Напишите первым!</p>
+          <p class="no-messages">No messages yet. Be the first to write!</p>
         }
       </div>
 
@@ -42,15 +42,15 @@
           type="text" 
           [(ngModel)]="messageText" 
           name="messageText" 
-          placeholder="Напишите сообщение..." 
+          placeholder="Type a message..." 
           autocomplete="off"
           required 
         />
-        <button type="submit">Отправить</button>
+        <button type="submit">Send</button>
       </form>
     } @else {
       <div class="select-prompt">
-        <p>👈 Выберите собеседника слева, чтобы начать диалог</p>
+        <p>👈 Select a contact on the left to start a conversation</p>
       </div>
     }
   </section>

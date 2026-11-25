@@ -77,7 +77,7 @@ public class PostsController : ControllerBase
             ))
             .FirstOrDefaultAsync();
 
-        if (post == null) return NotFound("Статья не найдена");
+        if (post == null) return NotFound("Post not found");
         return Ok(post);
     }
 

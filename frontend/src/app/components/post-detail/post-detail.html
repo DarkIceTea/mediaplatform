@@ -1,8 +1,8 @@
 @if (isLoading()) {
-  <p>Загрузка статьи...</p>
+  <p>Loading post...</p>
 } @else if (post()) {
   <article class="post-detail">
-    <a routerLink="/posts" class="back-link">← Назад к ленте</a>
+    <a routerLink="/posts" class="back-link">← Back to feed</a>
 
     @if (post()?.coverImageUrl) {
       <div class="cover">
@@ -13,7 +13,7 @@
     <h1>{{ post()?.title }}</h1>
 
     <div class="meta">
-      <span>Автор: <b>{{ post()?.author?.displayName }}</b></span>
+      <span>Author: <b>{{ post()?.author?.displayName }}</b></span>
       <span>•</span>
       <span>{{ post()?.createdAt | date:'longDate' }}</span>
       <button 
@@ -32,5 +32,5 @@
     <app-comments [postId]="post()!.id" />
   </article>
 } @else {
-  <p>Статья не найдена.</p>
+  <p>Post not found.</p>
 }

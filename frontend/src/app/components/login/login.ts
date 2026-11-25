@@ -29,7 +29,7 @@ export class Login {
 
     action$.subscribe({
       next: () => this.router.navigate(['/posts']),
-      error: (err) => this.errorMessage = err.error || 'Ошибка входа'
+      error: (err) => this.errorMessage = err.error || 'Login failed'
     });
   }
 }

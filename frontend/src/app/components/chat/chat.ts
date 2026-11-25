@@ -34,7 +34,7 @@ export class Chat implements OnInit, OnDestroy, AfterViewChecked {
   loadUsers() {
     this.chatService.getUsers().subscribe({
       next: (list) => this.users.set(list),
-      error: (err) => console.error('Ошибка загрузки контактов', err)
+      error: (err) => console.error('Failed to load contacts', err)
     });
   }
 

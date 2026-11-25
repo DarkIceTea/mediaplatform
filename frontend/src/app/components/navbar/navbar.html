@@ -1,16 +1,16 @@
 <nav class="navbar">
   <div class="logo" routerLink="/videos">🎬 MediaPlatform</div>
   <div class="links">
-    <a routerLink="/videos">Видео</a>
-    <a routerLink="/posts">Блог</a>
+    <a routerLink="/videos">Videos</a>
+    <a routerLink="/posts">Blog</a>
     @if (authService.isAuthenticated()) {
-      <a routerLink="/chat">💬 Сообщения</a>
-      <a routerLink="/videos/upload" class="btn-upload">⬆ Загрузить видео</a>
-      <a routerLink="/posts/create" class="btn-create">+ Статья</a>
+      <a routerLink="/chat">💬 Messages</a>
+      <a routerLink="/videos/upload" class="btn-upload">⬆ Upload video</a>
+      <a routerLink="/posts/create" class="btn-create">+ Post</a>
       <span class="user-info">👤 {{ authService.currentUser()?.displayName }}</span>
-      <button (click)="onLogout()" class="btn-logout">Выйти</button>
+      <button (click)="onLogout()" class="btn-logout">Log out</button>
     } @else {
-      <a routerLink="/login" class="btn-login">Войти</a>
+      <a routerLink="/login" class="btn-login">Log in</a>
     }
   </div>
 </nav>

@@ -1,5 +1,5 @@
 <div class="auth-card">
-  <h2>{{ isRegister ? 'Регистрация' : 'Вход в аккаунт' }}</h2>
+  <h2>{{ isRegister ? 'Sign up' : 'Log in to your account' }}</h2>
 
   @if (errorMessage) {
     <div class="error">{{ errorMessage }}</div>
@@ -8,15 +8,15 @@
   <form (submit)="onSubmit()">
     @if (isRegister) {
       <input type="text" placeholder="Username" [(ngModel)]="userName" name="userName" required />
-      <input type="text" placeholder="Имя для отображения" [(ngModel)]="displayName" name="displayName" required />
+      <input type="text" placeholder="Display name" [(ngModel)]="displayName" name="displayName" required />
     }
     <input type="email" placeholder="Email" [(ngModel)]="email" name="email" required />
-    <input type="password" placeholder="Пароль" [(ngModel)]="password" name="password" required />
+    <input type="password" placeholder="Password" [(ngModel)]="password" name="password" required />
 
-    <button type="submit">{{ isRegister ? 'Зарегистрироваться' : 'Войти' }}</button>
+    <button type="submit">{{ isRegister ? 'Sign up' : 'Log in' }}</button>
   </form>
 
   <p class="toggle-link" (click)="isRegister = !isRegister">
-    {{ isRegister ? 'Уже есть аккаунт? Войти' : 'Нет аккаунта? Зарегистрироваться' }}
+    {{ isRegister ? 'Already have an account? Log in' : 'Need an account? Sign up' }}
   </p>
 </div>

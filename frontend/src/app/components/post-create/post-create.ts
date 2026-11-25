@@ -22,7 +22,7 @@ export class PostCreate {
   isSubmitting = signal(false);
   errorMessage = '';
 
-  // Обработка выбора файла с ПК
+  // Handle file selection from the user's device
   onFileSelected(event: Event) {
     const input = event.target as HTMLInputElement;
     if (!input.files || input.files.length === 0) return;
@@ -36,7 +36,7 @@ export class PostCreate {
         this.isUploading.set(false);
       },
       error: () => {
-        this.errorMessage = 'Ошибка загрузки обложки';
+        this.errorMessage = 'Failed to upload cover image';
         this.isUploading.set(false);
       }
     });
@@ -44,7 +44,7 @@ export class PostCreate {
 
   onSubmit() {
     if (!this.title.trim() || !this.content.trim()) {
-      this.errorMessage = 'Заголовок и текст статьи обязательны';
+      this.errorMessage = 'Title and content are required';
       return;
     }
 
@@ -58,7 +58,7 @@ export class PostCreate {
         this.router.navigate(['/posts', res.id]);
       },
       error: () => {
-        this.errorMessage = 'Ошибка при создании статьи';
+        this.errorMessage = 'Failed to create post';
         this.isSubmitting.set(false);
       }
     });

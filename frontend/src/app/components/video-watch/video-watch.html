@@ -1,8 +1,8 @@
 @if (isLoading()) {
-  <p>Загрузка видеоплеера...</p>
+  <p>Loading video player...</p>
 } @else if (video()) {
   <div class="watch-layout">
-    <!-- Плеер со стримингом и постером-превью -->
+    <!-- Streaming player with thumbnail poster -->
     <div class="player-container">
       <video 
         controls 
@@ -10,11 +10,11 @@
         [poster]="video()?.thumbnailUrl"
         class="video-player">
         <source [src]="video()?.videoUrl" type="video/mp4" />
-        Ваш браузер не поддерживает встроенное воспроизведение видео.
+        Your browser does not support embedded video playback.
       </video>
     </div>
 
-    <!-- Инфо о видео -->
+    <!-- Video info -->
     <h1 class="video-title">{{ video()?.title }}</h1>
 
     <div class="video-meta">
@@ -23,7 +23,7 @@
         <span class="name">{{ video()?.author?.displayName }}</span>
       </div>
       <div class="stats">
-        <span>{{ video()?.viewsCount }} просмотров</span>
+        <span>{{ video()?.viewsCount }} views</span>
         <span>•</span>
         <span>{{ video()?.createdAt | date:'longDate' }}</span>
           <button 
@@ -43,9 +43,9 @@
       </div>
     }
 
-    <!-- Наш компонент комментариев под видео! -->
+    <!-- Comments section below the video -->
     <app-comments [videoId]="video()!.id" />
   </div>
 } @else {
-  <p>Видео не найдено.</p>
+  <p>Video not found.</p>
 }
